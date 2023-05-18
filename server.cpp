@@ -10,7 +10,7 @@ server::server()
     int sock_fd;
     int new_fd;
     int status;
-    // int setsock_val = 1;
+    int setsock_val = 1;
 
 
     memset(&hints, 0, sizeof(hints));
@@ -36,14 +36,21 @@ server::server()
             exit (1);
         }
 
-        // if ((status = setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &(setsock_val), sizeof(setsock_val))) < 1)
-        // {
-        //     std::cout << "setckopt " << '\n';
-        //     std::cout << strerror(errno) << '\n';
-        //     exit (1);
-        // }
+        if (fcntl(sock_fd, F_SETFL, O_NONBLOCK) < 0)
+        {
+            std::cout << " fcntl " << '\n';
+            std::cout << strerror(errno) << '\n';
+            exit (1);
+        }
 
-        if (bind(sock_fd, sock_res->ai_addr, sock_res->ai_addrlen))
+        if ((status = setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&(setsock_val), sizeof(setsock_val))) < 0)
+        {
+            std::cout << "setckopt " << '\n';
+            std::cout << strerror(errno) << '\n';
+            exit (1);
+        }
+
+        if (bind(sock_fd, sock_res->ai_addr, sock_res->ai_addrlen) < 0)
         {
             std::cout << "bind " << '\n';
             std::cout << strerror(errno) << '\n';
@@ -58,12 +65,6 @@ server::server()
             exit (1);
         }
 
-        if (fcntl(sock_fd, F_SETFL, O_NONBLOCK) < 0)
-        {
-            std::cout << " fcntl " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
 
         freeaddrinfo(sock_res);
 
@@ -81,6 +82,9 @@ server::server()
 
         if (fds[0].revents & POLLIN)
         {
+            int r;
+            char str[1024];
+            memset(str, 0, sizeof(str));
             if (fds[0].fd == sock_fd)
             {
                 if ((new_fd = accept(sock_fd, sock_res->ai_addr, &sock_res->ai_addrlen)) < 0)
@@ -88,14 +92,17 @@ server::server()
                     std::cout << strerror(errno) << '\n';
                     exit (1);
                 }
+
                 fds.resize(2);
                 fds[1].fd = new_fd;
                 fds[1].events = POLLIN;
                 std::cout << "connection made \n";
-                char str[10000] = {0};
-                recv(new_fd, str, 10000, 0);
+                r = recv(new_fd, str, sizeof(str), 0);
+                if (r < 0){
+                    std::cerr << strerror(errno) << std::endl;
+                }
                 std::cout << str << "\n";
-                // break ;
+                break ;
             }
         }    
     }

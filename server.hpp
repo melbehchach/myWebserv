@@ -14,7 +14,7 @@
 #include <poll.h>
 #include <unistd.h> // sysconf(), _SC_OPEN_MAX
 #include <cstring>
-#define PORT "8080"
+#define PORT "9430"
 
 class server
 {
