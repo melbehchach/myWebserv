@@ -2,5 +2,7 @@
 
 int main()
 {
+    server serv;
+    
     return (0);
 }
