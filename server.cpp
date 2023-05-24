@@ -2,112 +2,206 @@
 
 server::server() 
 {
-
-    struct addrinfo hints;
-    struct addrinfo *sock_res;
-    // struct addrinfo *sock_list;
-
-    int sock_fd;
-    int new_fd;
-    int status;
-    int setsock_val = 1;
-
-
     memset(&hints, 0, sizeof(hints));
-    
     hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
+    hints.ai_socktype = SOCK_STREAM;
 
-    
-    while (1)
-    {
-            if ((status = getaddrinfo("", PORT, &hints, &sock_res)) < 0)
-        {
-            std::cout << "getaddd " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-        if ((sock_fd = socket(sock_res->ai_family, sock_res->ai_socktype, sock_res->ai_protocol)) < 0)
-        {
-            std::cout << "socket " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-        if (fcntl(sock_fd, F_SETFL, O_NONBLOCK) < 0)
-        {
-            std::cout << " fcntl " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-        if ((status = setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, (char *)&(setsock_val), sizeof(setsock_val))) < 0)
-        {
-            std::cout << "setckopt " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-        if (bind(sock_fd, sock_res->ai_addr, sock_res->ai_addrlen) < 0)
-        {
-            std::cout << "bind " << '\n';
-            std::cout << strerror(errno) << '\n';
-
-            exit (1);
-        }
-
-        if (listen(sock_fd, 1) < 0)
-        {
-            std::cout << "listen " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-
-        freeaddrinfo(sock_res);
-
-        fds.resize(1);
-        fds[0].fd = sock_fd;
-        fds[0].events = POLLIN;
-        // std::cout << fds[0].fd << '\n';
-
-        if (poll(&fds[0], 1, -1) < 0)
-        {
-            std::cout << "poll " << '\n';
-            std::cout << strerror(errno) << '\n';
-            exit (1);
-        }
-
-        if (fds[0].revents & POLLIN)
-        {
-            int r;
-            char str[1024];
-            memset(str, 0, sizeof(str));
-            if (fds[0].fd == sock_fd)
-            {
-                if ((new_fd = accept(sock_fd, sock_res->ai_addr, &sock_res->ai_addrlen)) < 0)
-                {
-                    std::cout << strerror(errno) << '\n';
-                    exit (1);
-                }
-
-                fds.resize(2);
-                fds[1].fd = new_fd;
-                fds[1].events = POLLIN;
-                std::cout << "connection made \n";
-                r = recv(new_fd, str, sizeof(str), 0);
-                if (r < 0){
-                    std::cerr << strerror(errno) << std::endl;
-                }
-                std::cout << str << "\n";
-                break ;
-            }
-        }    
+    retval = getaddrinfo("localhost", PORT, &hints, &result);
+    if (retval < 0) {
+        std::cout <<  gai_strerror(errno) << '\n';
+        exit (1);
     }
+
+    sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (sockfd < 0)
+    {
+        std::cout << strerror(errno) << '\n';
+        exit (1);
+    }
+
+    setsock = 1;
+    retval = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock));
+    if (retval < 0) {
+        std::cout << strerror(errno) << '\n';
+        exit (1);
+    }
+
+    retval = bind(sockfd, result->ai_addr, result->ai_addrlen);
+    if (retval < 0) {
+        std::cout << strerror(errno) << '\n';
+        exit (1);
+    }
+
+    retval = listen(sockfd, 5);
+    if (retval < 0) {
+        std::cout << strerror(errno) << '\n';
+        exit (1);
+    }
+
+    pfds.resize(1);
     
+    pfds[0].fd = sockfd;
+    pfds[0].events = POLLIN;
+    fdcount = 1;
+
+
+    while (1) 
+    {
+        // std::cout << "pool wait \n";
+        nbrfds = poll(pfds.data(), pfds.size(), -1);
+        // std::cout << "pool work \n";
+        if (nbrfds < 0) 
+        {
+            std::cout << strerror(errno) << '\n';
+            exit (1);
+        }
+
+
+        size_t xyz = pfds.size();
+
+        for (size_t i = 0; i < xyz || i < pfds.size(); i++) 
+        {
+            // std::cout << "nloop \n";
+            // std::cout << pfds.size() << '\n';
+            if (pfds[i].revents & POLLIN) 
+            {
+                if (pfds[i].fd == sockfd) 
+                {
+                    clientaddrln = sizeof(client);
+                    new_fd = accept(sockfd, (struct sockaddr *)&client, &clientaddrln);
+                    if (new_fd < 0) 
+                    {
+                        std::cout << strerror(errno) << '\n';
+                        exit (1);    
+                    }
+                    else 
+                    {
+                        pollfds.fd = new_fd;
+                        pollfds.events = POLLIN;
+                        pfds.push_back(pollfds);
+                        fdcount++;
+                    }
+                }
+                else 
+                {
+                    byt_rcv = recv(pfds[i].fd, buffer, sizeof(buffer), 0);
+                    // send(pfds[i].fd, "HTTP/3 204 No Content\r\n\r\n", 100, 0);
+                    if (byt_rcv <= 0) 
+                    {
+                        if (byt_rcv < 0)
+                            std::cout << strerror(errno) << '\n';
+                        else if (byt_rcv == 0)
+                        {
+                            std::cout << "cnx closed ... \n";
+                            close(pfds[i].fd);
+                            pfds.erase(pfds.begin() + i);
+                        }
+                        // exit (1);    
+                    }
+                    else 
+                    {
+                        buffer[byt_rcv] = '\0';
+                        std::cout << buffer << '\n';
+                    }
+                }
+            }
+            // else if (pfds[i].revents | POLLOUT) 
+            // {
+            //     std::cout << "time to write.. \n";
+            // }
+            // else 
+            // {
+                // close(pfds[i].fd);
+                // pfds.erase(pfds.begin() + i);
+                // assert(1 == 0);
+            // }
+        }
+    }
 
 }
+
+// int server::ft_getaddrinfo(void) {
+
+//     // void for the moment after that i must pass the result of the parser <multimap>
+//     memset(&hints, 0, sizeof(hints));
+//     hints.ai_family = AF_INET;
+//     hints.ai_flags = AI_PASSIVE;
+//     hints.ai_socktype = SOCK_STREAM;
+
+//     retval = getaddrinfo("localhost", PORT, &hints, &result);
+//     if (retval < 0)
+//     {
+//         std::cout <<  gai_strerror(errno) << '\n';
+//         exit (1);
+//     }
+// }
+
+// int server::ft_socket(void) {
+
+//     sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+//     if (sockfd < 0 || (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0))
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (sockfd);
+// }
+
+// int server::ft_setsocket(void) {
+
+//     setsock = 1;
+//     retval = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock));
+//     if (retval < 0)
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (retval);
+// }
+
+// int server::ft_bind(void) {
+
+//     retval = bind(sockfd, result->ai_addr, result->ai_addrlen);
+//     if (retval < 0)
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (retval);
+// }
+
+// int server::ft_listen(void) {
+    
+//     retval = listen(sockfd, 5);
+//     if (retval < 0)
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (retval);
+// }
+
+// int server::ft_accept(void) {
+
+//     newfd = accept(sockfd, result->ai_addr, result->ai_addrlen);
+//     if (newfd < 0)
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (newfd);
+// }
+
+// int server::ft_poll(void) {
+
+//     if ((eventfd = poll(pfds, pfds.size(), 3000)) < 0)
+//     {
+//         std::cout << strerror(errno) << '\n';
+//         exit (1);
+//     }
+//     return (eventfd);
+// }
+
 
 server::~server() {}
