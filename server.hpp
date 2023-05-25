@@ -33,7 +33,7 @@ class server
         // int                         nonblock;
         int                         setsock;
         // int                         newfd;
-        int                         fdcount;
+        // int                         fdcount;
         int                         nbrfds;
         char                        buffer[1024];
 

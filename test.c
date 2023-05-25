@@ -1,227 +1,327 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/poll.h>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <poll.h>
+#include <errno.h>
 
-#define PORT "9034"   // Port we're listening on
+#define SERVER_PORT  12345
 
-// Get sockaddr, IPv4 or IPv6:
-void *get_in_addr(struct sockaddr *sa)
+#define TRUE             1
+#define FALSE            0
+
+main (int argc, char *argv[])
 {
-    if (sa->sa_family == AF_INET) {
-        return &(((struct sockaddr_in*)sa)->sin_addr);
-    }
+  int    len, rc, on = 1;
+  int    listen_sd = -1, new_sd = -1;
+  int    desc_ready, end_server = FALSE, compress_array = FALSE;
+  int    close_conn;
+  char   buffer[80];
+  struct sockaddr_in6   addr;
+  int    timeout;
+  struct pollfd fds[200];
+  int    nfds = 1, current_size = 0, i, j;
 
-    return &(((struct sockaddr_in6*)sa)->sin6_addr);
-}
+  /*************************************************************/
+  /* Create an AF_INET6 stream socket to receive incoming      */
+  /* connections on                                            */
+  /*************************************************************/
+  listen_sd = socket(AF_INET6, SOCK_STREAM, 0);
+  if (listen_sd < 0)
+  {
+    perror("socket() failed");
+    exit(-1);
+  }
 
-// Return a listening socket
-int get_listener_socket(void)
-{
-    int listener;     // Listening socket descriptor
-    int yes=1;        // For setsockopt() SO_REUSEADDR, below
-    int rv;
+  /*************************************************************/
+  /* Allow socket descriptor to be reuseable                   */
+  /*************************************************************/
+  rc = setsockopt(listen_sd, SOL_SOCKET,  SO_REUSEADDR,
+                  (char *)&on, sizeof(on));
+  if (rc < 0)
+  {
+    perror("setsockopt() failed");
+    close(listen_sd);
+    exit(-1);
+  }
 
-    struct addrinfo hints, *ai, *p;
+  /*************************************************************/
+  /* Set socket to be nonblocking. All of the sockets for      */
+  /* the incoming connections will also be nonblocking since   */
+  /* they will inherit that state from the listening socket.   */
+  /*************************************************************/
+  rc = ioctl(listen_sd, FIONBIO, (char *)&on);
+  if (rc < 0)
+  {
+    perror("ioctl() failed");
+    close(listen_sd);
+    exit(-1);
+  }
 
-    // Get us a socket and bind it
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_UNSPEC;
-    hints.ai_socktype = SOCK_STREAM;
-    hints.ai_flags = AI_PASSIVE;
-    if ((rv = getaddrinfo(NULL, PORT, &hints, &ai)) != 0) {
-        fprintf(stderr, "selectserver: %s\n", gai_strerror(rv));
-        exit(1);
-    }
-    
-    for(p = ai; p != NULL; p = p->ai_next) {
-        listener = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
-        if (listener < 0) { 
-            continue;
-        }
-        
-        // Lose the pesky "address already in use" error message
-        setsockopt(listener, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+  /*************************************************************/
+  /* Bind the socket                                           */
+  /*************************************************************/
+  memset(&addr, 0, sizeof(addr));
+  addr.sin6_family      = AF_INET6;
+  memcpy(&addr.sin6_addr, &in6addr_any, sizeof(in6addr_any));
+  addr.sin6_port        = htons(SERVER_PORT);
+  rc = bind(listen_sd,
+            (struct sockaddr *)&addr, sizeof(addr));
+  if (rc < 0)
+  {
+    perror("bind() failed");
+    close(listen_sd);
+    exit(-1);
+  }
 
-        if (bind(listener, p->ai_addr, p->ai_addrlen) < 0) {
-            close(listener);
-            continue;
-        }
+  /*************************************************************/
+  /* Set the listen back log                                   */
+  /*************************************************************/
+  rc = listen(listen_sd, 32);
+  if (rc < 0)
+  {
+    perror("listen() failed");
+    close(listen_sd);
+    exit(-1);
+  }
 
-        break;
-    }
+  /*************************************************************/
+  /* Initialize the pollfd structure                           */
+  /*************************************************************/
+  memset(fds, 0 , sizeof(fds));
 
-    freeaddrinfo(ai); // All done with this
+  /*************************************************************/
+  /* Set up the initial listening socket                        */
+  /*************************************************************/
+  fds[0].fd = listen_sd;
+  fds[0].events = POLLIN;
+  /*************************************************************/
+  /* Initialize the timeout to 3 minutes. If no                */
+  /* activity after 3 minutes this program will end.           */
+  /* timeout value is based on milliseconds.                   */
+  /*************************************************************/
+  timeout = (3 * 60 * 1000);
 
-    // If we got here, it means we didn't get bound
-    if (p == NULL) {
-        return -1;
-    }
+  /*************************************************************/
+  /* Loop waiting for incoming connects or for incoming data   */
+  /* on any of the connected sockets.                          */
+  /*************************************************************/
+  do
+  {
+    /***********************************************************/
+    /* Call poll() and wait 3 minutes for it to complete.      */
+    /***********************************************************/
+    printf("Waiting on poll()...\n");
+    rc = poll(fds, nfds, timeout);
 
-    // Listen
-    if (listen(listener, 10) == -1) {
-        return -1;
-    }
-
-    return listener;
-}
-
-// Add a new file descriptor to the set
-void add_to_pfds(struct pollfd *pfds[], int newfd, int *fd_count, int *fd_size)
-{
-    // If we don't have room, add more space in the pfds array
-    if (*fd_count == *fd_size) {
-        *fd_size *= 2; // Double it
-
-        *pfds = realloc(*pfds, sizeof(**pfds) * (*fd_size));
-    }
-
-    (*pfds)[*fd_count].fd = newfd;
-    (*pfds)[*fd_count].events = POLLIN; // Check ready-to-read
-
-    (*fd_count)++;
-}
-
-// Remove an index from the set
-void del_from_pfds(struct pollfd pfds[], int i, int *fd_count)
-{
-    // Copy the one from the end over this one
-    pfds[i] = pfds[*fd_count-1];
-
-    (*fd_count)--;
-}
-
-// Main
-int main(void)
-{
-    int listener;     // Listening socket descriptor
-
-    int newfd;        // Newly accept()ed socket descriptor
-    struct sockaddr_storage remoteaddr; // Client address
-    socklen_t addrlen;
-
-    char buf[256];    // Buffer for client data
-
-    char remoteIP[INET6_ADDRSTRLEN];
-
-    // Start off with room for 5 connections
-    // (We'll realloc as necessary)
-    int fd_count = 0;
-    int fd_size = 5;
-    struct pollfd *pfds = malloc(sizeof *pfds * fd_size);
-
-    // Set up and get a listening socket
-    listener = get_listener_socket();
-
-    if (listener == -1) {
-        fprintf(stderr, "error getting listening socket\n");
-        exit(1);
-    }
-
-    // Add the listener to set
-    pfds[0].fd = listener;
-    pfds[0].events = POLLIN; // Report ready to read on incoming connection
-
-    fd_count = 1; // For the listener
-
-    // Main loop
-    for(;;) 
+    /***********************************************************/
+    /* Check to see if the poll call failed.                   */
+    /***********************************************************/
+    if (rc < 0)
     {
-        int poll_count = poll(pfds, fd_count, -1);
+      perror("  poll() failed");
+      break;
+    }
 
-        if (poll_count == -1) 
+    /***********************************************************/
+    /* Check to see if the 3 minute time out expired.          */
+    /***********************************************************/
+    if (rc == 0)
+    {
+      printf("  poll() timed out.  End program.\n");
+      break;
+    }
+
+
+    /***********************************************************/
+    /* One or more descriptors are readable.  Need to          */
+    /* determine which ones they are.                          */
+    /***********************************************************/
+    current_size = nfds;
+    for (i = 0; i < current_size; i++)
+    {
+      /*********************************************************/
+      /* Loop through to find the descriptors that returned    */
+      /* POLLIN and determine whether it's the listening       */
+      /* or the active connection.                             */
+      /*********************************************************/
+      if(fds[i].revents == 0)
+        continue;
+
+      /*********************************************************/
+      /* If revents is not POLLIN, it's an unexpected result,  */
+      /* log and end the server.                               */
+      /*********************************************************/
+      if(fds[i].revents != POLLIN)
+      {
+        printf("  Error! revents = %d\n", fds[i].revents);
+        end_server = TRUE;
+        break;
+
+      }
+      
+      if (fds[i].fd == listen_sd)
+      {
+        /*******************************************************/
+        /* Listening descriptor is readable.                   */
+        /*******************************************************/
+        printf("  Listening socket is readable\n");
+
+        /*******************************************************/
+        /* Accept all incoming connections that are            */
+        /* queued up on the listening socket before we         */
+        /* loop back and call poll again.                      */
+        /*******************************************************/
+        do
         {
-            perror("poll");
-            exit(1);
+          /*****************************************************/
+          /* Accept each incoming connection. If               */
+          /* accept fails with EWOULDBLOCK, then we            */
+          /* have accepted all of them. Any other              */
+          /* failure on accept will cause us to end the        */
+          /* server.                                           */
+          /*****************************************************/
+          new_sd = accept(listen_sd, NULL, NULL);
+          if (new_sd < 0)
+          {
+            if (errno != EWOULDBLOCK)
+            {
+              perror("  accept() failed");
+              end_server = TRUE;
+            }
+            break;
+          }
+
+          /*****************************************************/
+          /* Add the new incoming connection to the            */
+          /* pollfd structure                                  */
+          /*****************************************************/
+          printf("  New incoming connection - %d\n", new_sd);
+          fds[nfds].fd = new_sd;
+          fds[nfds].events = POLLIN;
+          nfds++;
+
+          /*****************************************************/
+          /* Loop back up and accept another incoming          */
+          /* connection                                        */
+          /*****************************************************/
+        } while (new_sd != -1);
+      }
+
+      /*********************************************************/
+      /* This is not the listening socket, therefore an        */
+      /* existing connection must be readable                  */
+      /*********************************************************/
+
+      else
+      {
+        printf("  Descriptor %d is readable\n", fds[i].fd);
+        close_conn = FALSE;
+        /*******************************************************/
+        /* Receive all incoming data on this socket            */
+        /* before we loop back and call poll again.            */
+        /*******************************************************/
+
+        do
+        {
+          /*****************************************************/
+          /* Receive data on this connection until the         */
+          /* recv fails with EWOULDBLOCK. If any other         */
+          /* failure occurs, we will close the                 */
+          /* connection.                                       */
+          /*****************************************************/
+          rc = recv(fds[i].fd, buffer, sizeof(buffer), 0);
+          if (rc < 0)
+          {
+            if (errno != EWOULDBLOCK)
+            {
+              perror("  recv() failed");
+              close_conn = TRUE;
+            }
+            break;
+          }
+
+          /*****************************************************/
+          /* Check to see if the connection has been           */
+          /* closed by the client                              */
+          /*****************************************************/
+          if (rc == 0)
+          {
+            printf("  Connection closed\n");
+            close_conn = TRUE;
+            break;
+          }
+
+          /*****************************************************/
+          /* Data was received                                 */
+          /*****************************************************/
+          len = rc;
+          printf("  %d bytes received\n", len);
+
+          /*****************************************************/
+          /* Echo the data back to the client                  */
+          /*****************************************************/
+          rc = send(fds[i].fd, buffer, len, 0);
+          if (rc < 0)
+          {
+            perror("  send() failed");
+            close_conn = TRUE;
+            break;
+          }
+
+        } while(TRUE);
+
+        /*******************************************************/
+        /* If the close_conn flag was turned on, we need       */
+        /* to clean up this active connection. This            */
+        /* clean up process includes removing the              */
+        /* descriptor.                                         */
+        /*******************************************************/
+        if (close_conn)
+        {
+          close(fds[i].fd);
+          fds[i].fd = -1;
+          compress_array = TRUE;
         }
 
-        // Run through the existing connections looking for data to read
-        for(int i = 0; i < fd_count; i++) 
+
+      }  /* End of existing connection is readable             */
+    } /* End of loop through pollable descriptors              */
+
+    /***********************************************************/
+    /* If the compress_array flag was turned on, we need       */
+    /* to squeeze together the array and decrement the number  */
+    /* of file descriptors. We do not need to move back the    */
+    /* events and revents fields because the events will always*/
+    /* be POLLIN in this case, and revents is output.          */
+    /***********************************************************/
+    if (compress_array)
+    {
+      compress_array = FALSE;
+      for (i = 0; i < nfds; i++)
+      {
+        if (fds[i].fd == -1)
         {
+          for(j = i; j < nfds; j++)
+          {
+            fds[j].fd = fds[j+1].fd;
+          }
+          i--;
+          nfds--;
+        }
+      }
+    }
 
-            // Check if someone's ready to read
-            if (pfds[i].revents & POLLIN) 
-            { // We got one!!
+  } while (end_server == FALSE); /* End of serving running.    */
 
-                if (pfds[i].fd == listener) 
-                {
-                    // If listener is ready to read, handle new connection
-
-                    addrlen = sizeof remoteaddr;
-                    newfd = accept(listener,
-                        (struct sockaddr *)&remoteaddr,
-                        &addrlen);
-
-                    if (newfd == -1) 
-                    {
-                        perror("accept");
-                    } 
-                    else 
-                    {
-                        add_to_pfds(&pfds, newfd, &fd_count, &fd_size);
-
-                        printf("pollserver: new connection from %s on "
-                            "socket %d\n",
-                            inet_ntop(remoteaddr.ss_family,
-                                get_in_addr((struct sockaddr*)&remoteaddr),
-                                remoteIP, INET6_ADDRSTRLEN),
-                            newfd);
-                    }
-                } 
-                else 
-                {
-                    // If not the listener, we're just a regular client
-                    int nbytes = recv(pfds[i].fd, buf, sizeof buf, 0);
-
-                    int sender_fd = pfds[i].fd;
-
-                    if (nbytes <= 0) 
-                    {
-                        // Got error or connection closed by client
-                        if (nbytes == 0) 
-                        {
-                            // Connection closed
-                            printf("pollserver: socket %d hung up\n", sender_fd);
-                        } 
-                        else 
-                        {
-                            perror("recv");
-                        }
-
-                        close(pfds[i].fd); // Bye!
-
-                        del_from_pfds(pfds, i, &fd_count);
-
-                    } 
-                    else 
-                    {
-                        // We got some good data from a client
-
-                        for(int j = 0; j < fd_count; j++) 
-                        {
-                            // Send to everyone!
-                            int dest_fd = pfds[j].fd;
-
-                            // Except the listener and ourselves
-                            if (dest_fd != listener && dest_fd != sender_fd) 
-                            {
-                                if (send(dest_fd, buf, nbytes, 0) == -1) 
-                                {
-                                    perror("send");
-                                }
-                            }
-                        }
-                    }
-                } // END handle data from client
-            } // END got ready-to-read from poll()
-        } // END looping through file descriptors
-    } // END for(;;)--and you thought it would never end!
-    
-    return 0;
+  /*************************************************************/
+  /* Clean up all of the sockets that are open                 */
+  /*************************************************************/
+  for (i = 0; i < nfds; i++)
+  {
+    if(fds[i].fd >= 0)
+      close(fds[i].fd);
+  }
 }
