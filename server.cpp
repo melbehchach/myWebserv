@@ -13,8 +13,16 @@ server::server()
         exit (1);
     }
 
+
     sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
     if (sockfd < 0)
+    {
+        std::cout << strerror(errno) << '\n';
+        exit (1);
+    }
+
+    retval = fcntl(sockfd, F_SETFL, O_NONBLOCK);
+    if (retval < 0)
     {
         std::cout << strerror(errno) << '\n';
         exit (1);
@@ -34,7 +42,9 @@ server::server()
         exit (1);
     }
 
-    retval = listen(sockfd, 5);
+    freeaddrinfo(result);
+
+    retval = listen(sockfd, SOMAXCONN);
     if (retval < 0) {
         std::cout << strerror(errno) << '\n';
         exit (1);
@@ -44,8 +54,7 @@ server::server()
     pollfds.events = POLLIN;
     pfds.push_back(pollfds);
 
-
-    new_fd = -2;
+    new_fd = 1;
 
     while (1) 
     {
@@ -54,117 +63,69 @@ server::server()
         {
             // POLL CALL FAILED
             std::cout << strerror(errno) << '\n';
-            break ; 
+            break ;
         }
-
         // One or more descriptors are readable.  Need to determine which ones they are.
-        std::cout << "hala wala \n";
         // int current_size = pfds.size();
 
         for (size_t i = 0; i < pfds.size(); i++) 
         {
-            // std::cout <<
-            // Loop through to find the descriptors that returned POLLIN and determine whether it's the listening or the active connection.                         
-            if (pfds[i].revents == 0)
-                continue;
-
-            if (pfds[i].revents != POLLIN)
+            if (pfds[i].revents & POLLIN)
             {
-                // If revents is not POLLIN, it's an unexpected result, log and end the server.
-                // Still should know if i must end the server
-                std::cout << "error in revernts \n";
-                // break;
-            }
-            
-            // if (pfds[i].revents & POLLIN)
-            // {
-
-                std::cout << "debug 1 \n";
                 if (pfds[i].fd == sockfd) 
                 {
-                    std::cout << "start \n";
-
-                    while (new_fd != -1)
+                    // Listening descriptor is readable. 
+                    clientaddrln = sizeof(client);
+                    new_fd = accept(sockfd, (struct sockaddr*)&client, &clientaddrln);
+                    if (new_fd < 0) 
                     {
-                        clientaddrln = sizeof(client);
-                        new_fd = accept(sockfd, (struct sockaddr *)&client, &clientaddrln);
-                        std::cout << "accepting cnx.... \n";
-                        std::cout << "new fd == " << new_fd << '\n';;
-                        if (new_fd < 0) 
-                        {
-                            // SHOULD I EXIT OR CONTINUE 
+                            // accept failed break the loop
+                        if (errno == EWOULDBLOCK || errno == EAGAIN)
+                            std::cout << "after cheking the errno \n";
+                        else
                             std::cout << strerror(errno) << '\n';
-                            break;
-                            // exit (1);    
-                        }
-
-                        std::cout << "size of vector befor :: " << pfds.size() << '\n';
-
-                        pollfds.fd = new_fd;
-                        pollfds.events = POLLIN;
-                        pfds.push_back(pollfds);
-
-                        std::cout << pfds[0].fd << '\n';
-                        std::cout << pfds[1].fd << '\n';
-
-
-                        std::cout << "size of vector after :: " << pfds.size() << '\n';
                     }
+                    pollfds.fd = new_fd;
+                    pollfds.events = POLLIN;
+                    pfds.push_back(pollfds);
+                    // break;
                 }
-                else 
+                else
                 {
-                    std::cout << "hello from other condition \n";
-                    while (true)
+                    byt_rcv = recv(pfds[i].fd, buffer, sizeof(buffer), 0);
+                    if (byt_rcv <= 0)
                     {
-                        byt_rcv = recv(pfds[i].fd, buffer, sizeof(buffer), 0);
+                        // recv fialed
                         if (byt_rcv < 0)
-                        {
-                            // SHOULD I EXIT OR CONTINUE
                             std::cout << strerror(errno) << '\n';
-                            close(pfds[i].fd);
-                            pfds.erase(pfds.begin() + i);
-                            break;
-                        }
-
-                        if (byt_rcv == 0)
-                        {
-                            std::cout << "cnx closed ... \n";
-                            close(pfds[i].fd);
-                            pfds.erase(pfds.begin() + i);
-                            break;
-                        }
-                        
-                        else 
-                        {
-                            buffer[byt_rcv] = '\0';
-                            std::cout << buffer << '\n';
-                        }
-                        
-                        byt_rcv = send(pfds[i].fd, "HTTP/3 204 No Content\r\n\r\n", 100, 0);
-                        if (byt_rcv < 0)
-                        {
-                            std::cout << strerror(errno) << '\n';
-                            close(pfds[i].fd);
-                            pfds.erase(pfds.begin() + i);
-                            break;
-                        }
+                        close(pfds[i].fd);
+                        pfds.erase(pfds.begin() + i);
+                        // break;
+                    }
+                    else
+                    {
+                        // recv acces
+                        buffer[byt_rcv] = '\0';
+                        std::cout << buffer << '\n';
+                        pfds[i].events = POLLOUT;
+                        // break;
                     }
                 }
-                std::cout << "debug 2 \n";
-            // }
-            // else if (pfds[i].revents | POLLOUT) 
-            // {
-            //     std::cout << "time to write.. \n";
-            // }
-            // else 
-            // {
-                // close(pfds[i].fd);
-                // pfds.erase(pfds.begin() + i);
-                // assert(1 == 0);
-            // }
+            }
+            if (pfds[i].revents & POLLOUT)
+            {
+                byt_rcv = send(pfds[i].fd, "HTTP/1.1 200 OK\r\n"
+                        "Content-Type: text/plain\r\n"
+                        "Content-Length: 1024\r\n"
+                        "\r\n"
+                        "Hamid rak nadi it works !", 1024, 0);
+                if (byt_rcv < 0)
+                    std::cout << strerror(errno) << '\n';
+                close(pfds[i].fd);
+                pfds.erase(pfds.begin() + i);
+            }
         }
     }
-
 }
 
 // int server::ft_getaddrinfo(void) {
