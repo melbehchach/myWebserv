@@ -24,26 +24,23 @@ class server
         struct addrinfo             *result;
         struct sockaddr_in          client;
         struct pollfd               pollfds;
-        // struct pollfd               *array;
         socklen_t                   clientaddrln;
         int                         sockfd;
-        int                         new_fd;
+        int                         cltfd;
         int                         retval;
         int                         byt_rcv;
-        // int                         nonblock;
-        int                         setsock;
-        // int                         newfd;
-        // int                         fdcount;
         int                         nbrfds;
         char                        buffer[1024];
 
-        // void    ft_getaddrinfo(void);
-        // int     ft_socket(void);
-        // int     ft_setsocket(void);
-        // int     ft_bind(void);
-        // int     ft_listen(void);
-        // int     ft_accept(void);
-        // int     ft_poll(void);
+        void    ft_getaddrinfo(void);
+        int     ft_socket(void);
+        int     ft_setsocket(void);
+        int     ft_bind(void);
+        int     ft_listen(void);
+        int     ft_accept(void);
+        int     ft_poll(void);
+        void    ft_receive(int index);
+        void    ft_add_fd(int fd);
 
     public:
         server();
