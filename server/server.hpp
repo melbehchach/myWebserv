@@ -1,23 +1,19 @@
+#pragma once
 #ifndef SERVER_HPP
 #define SERVER_HPP
 
-#include <iostream>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <map>
-#include <vector>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <sys/types.h>
-#include <fcntl.h>
-#include <exception>
-#include <poll.h>
-#include <unistd.h> // sysconf(), _SC_OPEN_MAX
-#include <cstring>
+#include "../header.hpp"
+#include "../request/request.hpp"
+#include "../response/response.hpp"
+
+
 #define PORT "9430"
 
-class server
-{
+class request;
+
+class server {
+    
+
     private:
         std::vector<struct pollfd>  pfds;
         struct addrinfo             hints;
@@ -31,16 +27,19 @@ class server
         int                         byt_rcv;
         int                         nbrfds;
         char                        buffer[1024];
+        std::string                 reqmsg;
+        request                     reqobj;
+        response                    respoo;
 
-        void    ft_getaddrinfo(void);
-        int     ft_socket(void);
-        int     ft_setsocket(void);
-        int     ft_bind(void);
-        int     ft_listen(void);
-        int     ft_accept(void);
-        int     ft_poll(void);
-        void    ft_receive(int index);
-        void    ft_add_fd(int fd);
+        void    _getaddrinfo(void);
+        int     _socket(void);
+        int     _setsocket(void);
+        int     _bind(void);
+        int     _listen(void);
+        int     _accept(void);
+        int     _poll(void);
+        void    _receive(int index);
+        void    _add_fd(int fd);
 
     public:
         server();
