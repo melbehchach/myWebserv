@@ -41,7 +41,7 @@ void request::uri_checker(void) {
         _status_code = 414;
     }
     if (access(_uri.c_str(), F_OK | R_OK) != 0) {
-        _status_code = 404;
+        _status_code = 403;
     }
 }
 
