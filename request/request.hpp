@@ -10,8 +10,8 @@
 class request {
 
     private:
-        std::multimap<std::string, std::string>  _msgrequest;
-        std::multimap<std::string, std::string>::iterator  it;
+        std::multimap<std::string, std::string>             _msgrequest;
+        std::multimap<std::string, std::string>::iterator   it;
 
         std::stringstream                   _message;
         std::string                         _reqHeaders;
@@ -32,6 +32,8 @@ class request {
 
 
     public:
+        
+        int                                 _status_code;
         request();
         ~request();
         void    get_request(std::string& headres);

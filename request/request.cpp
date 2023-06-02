@@ -1,7 +1,6 @@
 #include "request.hpp"
 
 request::request() {
-
 }
 
 void request::get_request(std::string& headers) {
@@ -15,6 +14,7 @@ void request::get_request(std::string& headers) {
 }
 
 bool request::get_request_line(void) {
+    _status_code = 200;
     for (int i = 0; i < 3; i++) {
         if (i == 0)
             std::getline(_message, _method, ' ');
@@ -31,29 +31,24 @@ bool request::get_request_line(void) {
 }
 
 void request::method_checker(void) {
-    if (_method.compare("GET") != 0 || _method.compare("POST") != 0 || _method.compare("DELETE") != 0) {
-        _httpResponse.error_message(505);
+    if (_method != "GET" && _method != "POST" && _method != "DELETE") {
+        _status_code = 405;
     }
-    // return (true);
 }
 
 void request::uri_checker(void) {
     if (_uri.size() > 2048U) {
-        _httpResponse.error_message(414);
+        _status_code = 414;
     }
-    else if (access((_uri.c_str()), F_OK | R_OK) == -1) {
-        _httpResponse.error_message(404);
+    if (access(_uri.c_str(), F_OK | R_OK) != 0) {
+        _status_code = 404;
     }
-    else
-        std::cout << "rak nadi \n";
-    // retunrn (true);
 }
 
 void request::httpv_checker(void) {
-    if (_http.compare("HTTP/1.1") != 0) {
-        _httpResponse.error_message(505);
+    if (_http != "HTTP/1.1") {
+        _status_code = 505;
     }
-    // return (true);
 }
 
 void request::get_headers(void)

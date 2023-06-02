@@ -30,6 +30,7 @@ class server {
         std::string                 reqmsg;
         request                     reqobj;
         response                    respoo;
+        std::string                 _msg;
 
         void    _getaddrinfo(void);
         int     _socket(void);

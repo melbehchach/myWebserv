@@ -2,19 +2,16 @@
 
 response::response() {}
 
-std::string response::response_generator(void) {
-
-    // status line => http version + status code + message
-    ss << _status_code;
-    _status_line.clear();
+void response::response_generator(int coode) {
+    _status_line.erase();
+    error_message(coode);
+    ss << coode;
     _httpv = "HTTP/1.1 ";
     _status_line.append(_httpv);
     _status_line.append(ss.str());
-    ss.str("");
     _status_line.append(_message);
     _status_line.append("\r\n");
-    std::cout << _status_line << '\n';
-    return (_status_line);
+    ss.str("");
 }
 
 void response::GET_response(void) {
@@ -30,91 +27,88 @@ void response::DELETE_response(void) {
 }
 
 void response::error_message(int code) {
-    std::cout << "first or not \n";
     if (code == 200)
-        _message = " ok ";
+        _message = " ok\r\n";
     else if (code == 400) 
-        _message = " Bad Request ";
+        _message = " Bad Reques\r\n";
     else if (code == 401) 
-        _message = " Unauthorized ";
+        _message = " Unauthorized\r\n";
     else if (code == 402) 
-        _message = " Payment Required ";
+        _message = " Payment Required\r\n";
     else if (code == 404) 
-        _message = " Not Found ";
+        _message = " Not Found\r\n";
     else if (code == 405) 
-        _message = " Method Not Allowed ";
+        _message = " Method Not Allowed\r\n";
     else if (code == 403) 
-        _message = " Forbidden ";
+        _message = " Forbidden\r\n";
     else if (code == 406) 
-        _message = " Not Acceptable ";
+        _message = " Not Acceptable\r\n";
     else if (code == 407) 
-        _message = " Proxy Authentication Required ";
+        _message = " Proxy Authentication Required\r\n";
     else if (code == 408) 
-        _message = " Request Timeout ";
+        _message = " Request Timeout\r\n";
     else if (code == 409) 
-        _message = " Conflict ";
+        _message = " Conflict\r\n";
     else if (code == 410) 
-        _message = " Gone ";
+        _message = " Gone\r\n";
     else if (code == 411) 
-        _message = " Length Required ";
+        _message = " Length Required\r\n";
     else if (code == 412) 
-        _message = " Precondition Failed ";
+        _message = " Precondition Failed\r\n";
     else if (code == 413) 
-        _message = " Payload Too Large ";
+        _message = " Payload Too Large\r\n";
     else if (code == 414) 
-        _message = " URI Too Long ";
+        _message = " URI Too Long\r\n";
     else if (code == 415) 
-        _message = " Unsupported Media Type ";
+        _message = " Unsupported Media Type\r\n";
     else if (code == 416) 
-        _message = " Range Not Satisfiable ";
+        _message = " Range Not Satisfiable\r\n";
     else if (code == 417) 
-        _message = " Expectation Failed ";
+        _message = " Expectation Failed\r\n";
     else if (code == 422) 
-        _message = " Unprocessable Entity ";
+        _message = " Unprocessable Entity\r\n";
     else if (code == 423) 
-        _message = " Locked ";
+        _message = " Locked\r\n";
     else if (code == 424) 
-        _message = " Failed Dependency ";
+        _message = " Failed Dependency\r\n";
     else if (code == 425) 
-        _message = " Too Early ";
+        _message = " Too Early\r\n";
     else if (code == 426) 
-        _message = " Upgrade Required ";
+        _message = " Upgrade Required\r\n";
     else if (code == 428) 
-        _message = " Precondition Required ";
+        _message = " Precondition Required\r\n";
     else if (code == 429) 
-        _message = " Too Many Requests ";
+        _message = " Too Many Requests\r\n";
     else if (code == 431) 
-        _message = " Request Header Fields Too Large ";
+        _message = " Request Header Fields Too Large\r\n";
     else if (code == 451) 
-        _message = " Unavailable For Legal Reasons ";
+        _message = " Unavailable For Legal Reasons\r\n";
     else if (code == 500) 
-        _message = " Internal Server Error ";
+        _message = " Internal Server Error\r\n";
     else if (code == 501) 
-        _message = " Not Implemented ";
+        _message = " Not Implemented\r\n";
     else if (code == 502) 
-        _message = " Bad Gateway ";
+        _message = " Bad Gateway\r\n";
     else if (code == 503) 
-        _message = " Service Unavailable ";
+        _message = " Service Unavailable\r\n";
     else if (code == 504) 
-        _message = " Gateway Timeout ";
+        _message = " Gateway Timeout\r\n";
     else if (code == 505) 
-        _message = " HTTP Version Not Supported ";
+        _message = " HTTP Version Not Supported\r\n";
     else if (code == 506) 
-        _message = " Variant Also Negotiates ";
+        _message = " Variant Also Negotiates\r\n";
     else if (code == 507) 
-        _message = " Insufficient Storage ";
+        _message = " Insufficient Storage\r\n";
     else if (code == 508) 
-        _message = " Loop Detected ";
+        _message = " Loop Detected\r\n";
     else if (code == 510) 
-        _message = " Not Extended ";
+        _message = " Not Extended\r\n";
     else if (code == 511) 
-        _message = " Network Authentication Required ";
+        _message = " Network Authentication Required\r\n";
     else {
         code = 404;
-        _message = " Not Found ";
+        _message = " Not Found\r\n";
     }
-    std::cout << "status code = " << _status_code << '\n';
-    _status_code = code;
 }
 
 response::~response() {}

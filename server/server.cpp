@@ -22,8 +22,16 @@ server::server()
                     _receive(i); // check the receiving of data
             }
             if (pfds[i].revents & POLLOUT) {
-                
-                byt_rcv = send(pfds[i].fd, respoo.response_generator().c_str(), 90, 0);
+                respoo.response_generator(reqobj._status_code);
+                _msg = respoo._status_line;
+                _msg += "Date: Mon, 27 Jul 2009 12:28:53 GMT\r\n"
+                        "Server: Apache/2.2.14 (Win32)\r\n"
+                        "Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\n"
+                        "Content-Length: 88\r\n"
+                        "Content-Type: text/html\r\n"
+                        "Connection: Closed\r\n"
+                        "\r\n";
+                byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
                 if (byt_rcv < 0)
                     std::cout << strerror(errno) << '\n';
                 close(pfds[i].fd);
