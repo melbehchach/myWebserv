@@ -18,6 +18,7 @@
 #include <poll.h>
 #include <unistd.h> // sysconf(), _SC_OPEN_MAX
 #include <cstdio>
+#include <ctime>
 // #include "./server/server.hpp"
 // #include "./request/request.hpp"
 

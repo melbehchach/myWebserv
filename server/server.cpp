@@ -22,33 +22,35 @@ server::server()
                     _receive(i); // check the receiving of data
             }
             if (pfds[i].revents & POLLOUT) {
+                respoo.get_content_type(_path);
                 respoo.response_generator(reqobj._status_code);
                 _msg = respoo._status_line;
-                _msg += "Date: Mon, 27 Jul 2009 12:28:53 GMT\r\n"
-                        "Server: Apache/2.2.14 (Win32)\r\n"
-                        "Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT\r\n"
-                        "Content-Length: 189434\r\n"
-                        "Content-Type: image/png\r\n"
-                        "Connection: Closed\r\n"
-                        "\r\n";
-                // byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
-                std::ifstream file(_path);
+                _msg += respoo.server_name();
+                _msg += respoo.content_type();
+                _msg += respoo.date();
+                _msg += "\r\n";
+                // std::cout << _msg ;
+                byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
+                std::ifstream _file(_path, std::ios::in | std::ios::binary  | std::ios::ate);
+                if (!_file.is_open())
+                    std::cout << "error kabiiiiiir \n";
+                std::string buf;
+                std::streampos _fileSize = _file.tellg();
+                int contentLength = static_cast<int>(_fileSize);
+                std::cout << contentLength << '\n';
+                _file.close();
+                std::fstream file(_path, std::ios::in | std::ios::binary);
                 if (!file.is_open())
                     std::cout << "error kabiiiiiir \n";
-                // std::cout << "uri == " << _path << '\n';
-                std::string buf;
                 while (file.good())
                 {
+                    // std::cout << "inside the loop \n";
                         memset(buffer, 0, sizeof(buffer));
                         file.read(buffer, sizeof(buffer));
                         buf += buffer;
-                        // send(pfds[i].fd, buffer, file.gcount(), 0);
+                        send(pfds[i].fd, buffer, file.gcount(), 0);
                 }
                 file.close();
-                std::cout << "Size of buffer: " << buf.size() << std::endl;
-                _msg += (buf + "\r\n\r\n");
-                byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
-                std::cout << _msg.size() << '\n';
                 if (byt_rcv < 0)
                     std::cout << strerror(errno) << '\n';
                 close(pfds[i].fd);

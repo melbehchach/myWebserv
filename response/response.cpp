@@ -4,13 +4,19 @@ response::response() {}
 
 void response::response_generator(int coode) {
     _status_line.erase();
-    error_message(coode);
+    get_error_message(coode);
     ss << coode;
     _httpv = "HTTP/1.1 ";
     _status_line.append(_httpv);
     _status_line.append(ss.str());
     _status_line.append(_message);
-    _status_line.append("\r\n");
+    date();
+    server_name();
+    content_type();
+    // std::cout << _status_line;
+    // std::cout << _date << '\n';
+    // std::cout << _server_name << '\n';
+    // std::cout << _content_type << '\n';
     ss.str("");
 }
 
@@ -26,7 +32,49 @@ void response::DELETE_response(void) {
     
 }
 
-void response::error_message(int code) {
+void response::content_length(void) {
+
+    
+}
+
+std::string response::content_type(void) {
+
+    _content_type = "content-type: ";
+    _content_type += _type;
+    _content_type += "\r\n";
+    return (_content_type);
+}
+
+void response::connexion(void) {
+
+}
+
+std::string response::server_name(void) {
+
+    _server_name = "server: ";
+    _server_name += "Aba7law's webserv v1.0";
+    _server_name += "\r\n";
+    return (_server_name);
+}
+
+std::string response::date(void) {
+
+    // Get the current system time
+    std::time_t currentTime = std::time(nullptr);
+
+    // Convert the time_t object to a string
+    char timeString[100];
+    std::strftime(timeString, sizeof(timeString), "%a, %d %b %Y %H:%M:%S %Z", std::localtime(&currentTime));
+
+    _date = "Date: ";
+    _date += timeString;
+    _date += " GMT";
+    _date += "\r\n";
+    return (_date);
+}
+
+
+void response::get_error_message(int code) {
     if (code == 200)
         _message = " ok\r\n";
     else if (code == 400) 
@@ -110,6 +158,135 @@ void response::error_message(int code) {
         _message = " Not Found\r\n";
     }
 }
+
+void response::get_content_type(const std::string& file)
+{
+    if (file.rfind('.') != std::string::npos) {
+        std::string ext =
+            file.substr(file.rfind('.'), file.size());
+        if (ext == ".html") {
+            _type = "text/html";
+        } 
+        else if (ext == ".js") {
+            _type = "application/javascript";
+        } 
+        else if (ext == ".css") {
+            _type = "text/css";
+        } 
+        else if (ext == ".ico") {
+            _type = "image/x-icon";
+        } 
+        else if (ext == ".jpeg" || ext == ".jpg") {
+            _type = "image/jpeg";
+        }
+        else if (ext == ".png") {
+            _type = "image/png";
+        }
+        else if (ext == ".mp4") {
+            _type = "video/mp4";
+        }
+        else if (ext == ".gif") {
+            _type = "image/gif";
+        }
+        else if (ext == ".tiff") {
+            _type = "image/tiff";
+        }
+        else if (ext == ".svg") {
+            _type = "image/svg+xml";
+        }
+        else if (ext == ".csv") {
+            _type = "text/csv";
+        }
+        else if (ext == ".xml") {
+            _type = "application/xml";
+        }
+        else if (ext == ".zip") {
+            _type = "application/zip";
+        }
+        else if (ext == ".mp3") {
+            _type = "audio/mpeg";
+        }
+        else if (ext == ".wma") {
+            _type = "audio/x-ms-wma";
+        }
+        else if (ext == ".ra") {
+            _type = "audio/vnd.rn-realaudio";
+        }
+        else if (ext == ".wav") {
+            _type = "audio/x-wav";
+        }
+        else if (ext == ".mpeg") {
+            _type = "video/mpeg";
+        }
+        else if (ext == ".mov") {
+            _type = "video/quicktime";
+        }
+        else if (ext == ".m4v") {
+            _type = "video/x-m4v";
+        }
+        else if (ext == ".qt") {
+            _type = "video/quicktime";
+        }
+        else if (ext == ".wmv") {
+            _type = "video/x-ms-wmv";
+        }
+        else if (ext == ".avi") {
+            _type = "video/x-msvideo";
+        }
+        else if (ext == ".flv") {
+            _type = "video/x-flv";
+        }
+        else if (ext == ".webm") {
+            _type = "video/webm";
+        }
+        else if (ext == ".odt") {
+            _type = "application/vnd.oasis.opendocument.text";
+        }
+        else if (ext == ".ods") {
+            _type = "application/vnd.oasis.opendocument.spreadsheet";
+        }
+        else if (ext == ".odp") {
+            _type = "application/vnd.oasis.opendocument.presentation";
+        }
+        else if (ext == ".odg") {
+            _type = "application/vnd.oasis.opendocument.graphics";
+        }
+        else if (ext == ".ods") {
+            _type = "application/vnd.oasis.opendocument.spreadsheet";
+        }
+        else if (ext == ".odt") {
+            _type = "application/vnd.oasis.opendocument.text";
+        }
+        else if (ext == ".ppt") {
+            _type = "application/vnd.ms-powerpoint";
+        }
+        else if (ext == ".pptx") {
+            _type =
+                "application/"
+                "vnd.openxmlformats-officedocument.presentationml.presentation";
+        }
+        else if (ext == ".xls") {
+            _type = "application/vnd.ms-excel";
+        }
+        else if (ext == ".xlsx") {
+            _type =
+                "application/"
+                "vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        }
+        else if (ext == ".doc") {
+            _type = "application/msword";
+        }
+        else if (ext == ".docx") {
+            _type =
+                "application/"
+                "vnd.openxmlformats-officedocument.wordprocessingml.document";
+        }
+        else if (ext == ".xul") {
+            _type = "application/vnd.mozilla.xul+xml";
+        }
+    }
+}
+
 
 response::~response() {}
 
@@ -227,94 +404,94 @@ response::~response() {}
 
 // CONTENT TYPE 
 // std::string HttpResponse::get_content_type(const std::string& file_name) {
-//     std::string content_type = "text/plain";
+//     std::string _content_type = "text/plain";
 //     if (file_name.rfind('.') != std::string::npos) {
 //         std::string ext =
 //             file_name.substr(file_name.rfind('.'), file_name.size());
 //         if (ext == ".html") {
-//             content_type = "text/html";
+//             _content_type = "text/html";
 //         } else if (ext == ".js") {
-//             content_type = "application/javascript";
+//             _content_type = "application/javascript";
 //         } else if (ext == ".css") {
-//             content_type = "text/css";
+//             _content_type = "text/css";
 //         } else if (ext == ".ico") {
-//             content_type = "image/x-icon";
+//             _content_type = "image/x-icon";
 //         } else if (ext == ".jpeg" || ext == ".jpg") {
-//             content_type = "image/jpeg";
+//             _content_type = "image/jpeg";
 //         } else if (ext == ".png") {
-//             content_type = "image/png";
+//             _content_type = "image/png";
 //         } else if (ext == ".mp4") {
-//             content_type = "video/mp4";
+//             _content_type = "video/mp4";
 //         } else if (ext == ".gif") {
-//             content_type = "image/gif";
+//             _content_type = "image/gif";
 //         } else if (ext == ".tiff") {
-//             content_type = "image/tiff";
+//             _content_type = "image/tiff";
 //         } else if (ext == ".svg") {
-//             content_type = "image/svg+xml";
+//             _content_type = "image/svg+xml";
 //         } else if (ext == ".csv") {
-//             content_type = "text/csv";
+//             _content_type = "text/csv";
 //         } else if (ext == ".xml") {
-//             content_type = "application/xml";
+//             _content_type = "application/xml";
 //         } else if (ext == ".zip") {
-//             content_type = "application/zip";
+//             _content_type = "application/zip";
 //         } else if (ext == ".mp3") {
-//             content_type = "audio/mpeg";
+//             _content_type = "audio/mpeg";
 //         } else if (ext == ".wma") {
-//             content_type = "audio/x-ms-wma";
+//             _content_type = "audio/x-ms-wma";
 //         } else if (ext == ".ra") {
-//             content_type = "audio/vnd.rn-realaudio";
+//             _content_type = "audio/vnd.rn-realaudio";
 //         } else if (ext == ".wav") {
-//             content_type = "audio/x-wav";
+//             _content_type = "audio/x-wav";
 //         } else if (ext == ".mpeg") {
-//             content_type = "video/mpeg";
+//             _content_type = "video/mpeg";
 //         } else if (ext == ".mov") {
-//             content_type = "video/quicktime";
+//             _content_type = "video/quicktime";
 //         } else if (ext == ".m4v") {
-//             content_type = "video/x-m4v";
+//             _content_type = "video/x-m4v";
 //         } else if (ext == ".qt") {
-//             content_type = "video/quicktime";
+//             _content_type = "video/quicktime";
 //         } else if (ext == ".wmv") {
-//             content_type = "video/x-ms-wmv";
+//             _content_type = "video/x-ms-wmv";
 //         } else if (ext == ".avi") {
-//             content_type = "video/x-msvideo";
+//             _content_type = "video/x-msvideo";
 //         } else if (ext == ".flv") {
-//             content_type = "video/x-flv";
+//             _content_type = "video/x-flv";
 //         } else if (ext == ".webm") {
-//             content_type = "video/webm";
+//             _content_type = "video/webm";
 //         } else if (ext == ".odt") {
-//             content_type = "application/vnd.oasis.opendocument.text";
+//             _content_type = "application/vnd.oasis.opendocument.text";
 //         } else if (ext == ".ods") {
-//             content_type = "application/vnd.oasis.opendocument.spreadsheet";
+//             _content_type = "application/vnd.oasis.opendocument.spreadsheet";
 //         } else if (ext == ".odp") {
-//             content_type = "application/vnd.oasis.opendocument.presentation";
+//             _content_type = "application/vnd.oasis.opendocument.presentation";
 //         } else if (ext == ".odg") {
-//             content_type = "application/vnd.oasis.opendocument.graphics";
+//             _content_type = "application/vnd.oasis.opendocument.graphics";
 //         } else if (ext == ".ods") {
-//             content_type = "application/vnd.oasis.opendocument.spreadsheet";
+//             _content_type = "application/vnd.oasis.opendocument.spreadsheet";
 //         } else if (ext == ".odt") {
-//             content_type = "application/vnd.oasis.opendocument.text";
+//             _content_type = "application/vnd.oasis.opendocument.text";
 //         } else if (ext == ".ppt") {
-//             content_type = "application/vnd.ms-powerpoint";
+//             _content_type = "application/vnd.ms-powerpoint";
 //         } else if (ext == ".pptx") {
-//             content_type =
+//             _content_type =
 //                 "application/"
 //                 "vnd.openxmlformats-officedocument.presentationml.presentation";
 //         } else if (ext == ".xls") {
-//             content_type = "application/vnd.ms-excel";
+//             _content_type = "application/vnd.ms-excel";
 //         } else if (ext == ".xlsx") {
-//             content_type =
+//             _content_type =
 //                 "application/"
 //                 "vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 //         } else if (ext == ".doc") {
-//             content_type = "application/msword";
+//             _content_type = "application/msword";
 //         } else if (ext == ".docx") {
-//             content_type =
+//             _content_type =
 //                 "application/"
 //                 "vnd.openxmlformats-officedocument.wordprocessingml.document";
 //         } else if (ext == ".xul") {
-//             content_type = "application/vnd.mozilla.xul+xml";
+//             _content_type = "application/vnd.mozilla.xul+xml";
 //         }
 //     }
 
-//     return content_type;
+//     return _content_type;
 // };

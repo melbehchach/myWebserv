@@ -37,7 +37,6 @@ void request::method_checker(void) {
 }
 
 void request::uri_checker(void) {
-    // std::cout << _uri << '\n';
     if (_uri.size() > 2048U) {
         _status_code = 414;
     }
