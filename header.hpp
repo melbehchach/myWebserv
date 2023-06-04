@@ -2,6 +2,7 @@
 #define HEADER_HPP
 
 #include <iostream>
+#include <fstream>
 #include <cstring>
 #include <string>
 #include <sstream>

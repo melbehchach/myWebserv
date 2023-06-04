@@ -16,7 +16,6 @@ class request {
         std::stringstream                   _message;
         std::string                         _reqHeaders;
         std::string                         _method;
-        std::string                         _uri;
         std::string                         _http;
         std::string                         _key;
         std::string                         _value;
@@ -34,6 +33,7 @@ class request {
     public:
         
         int                                 _status_code;
+        std::string                         _uri;
         request();
         ~request();
         void    get_request(std::string& headres);

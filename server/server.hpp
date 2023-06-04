@@ -31,6 +31,7 @@ class server {
         request                     reqobj;
         response                    respoo;
         std::string                 _msg;
+        std::string                 _path;
 
         void    _getaddrinfo(void);
         int     _socket(void);
