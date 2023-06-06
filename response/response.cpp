@@ -2,7 +2,8 @@
 
 response::response() {}
 
-void response::response_generator(int coode) {
+std::string response::headers_generator(int coode) {
+
     _status_line.erase();
     get_error_message(coode);
     ss << coode;
@@ -10,17 +11,35 @@ void response::response_generator(int coode) {
     _status_line.append(_httpv);
     _status_line.append(ss.str());
     _status_line.append(_message);
-    date();
-    server_name();
-    content_type();
-    // std::cout << _status_line;
-    // std::cout << _date << '\n';
-    // std::cout << _server_name << '\n';
-    // std::cout << _content_type << '\n';
+    _headers = _status_line;
+    _headers += date();
+    _headers += server_name();
+    _headers += content_type();
+    _headers += "\r\n";
     ss.str("");
+    return (_headers);
 }
 
 void response::GET_response(void) {
+    // respoo.get_content_type(_path);
+    // _msg = respoo.headers_generator(reqobj._status_code);
+    // if (_total_size == get_file_size())
+    //     byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
+    // std::string buf;
+    // std::fstream file(_path, std::ios::in | std::ios::binary);
+    // if (!file.is_open())
+    //     std::cout << "error kabiiiiiir \n";
+    // while (file.good()) {
+    //     memset(buffer, 0, sizeof(buffer));
+    //     file.read(buffer, sizeof(buffer));
+    //     buf += buffer;
+    //     send(pfds[i].fd, buffer, file.gcount(), 0);
+    // }
+    // file.close();
+    // if (byt_rcv < 0)
+    //     std::cout << strerror(errno) << '\n';
+    // close(pfds[i].fd);
+    // pfds.erase(pfds.begin() + i);
 
 }
 

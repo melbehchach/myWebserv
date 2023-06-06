@@ -10,11 +10,14 @@ server::server()
     _listen(); // listen through the socket
     _add_fd(sockfd); // add the lestining socket to the pfds vector
 
+    pos_read = 0;
     while (1) {
         nbrfds = _poll();
+        std::cout << "[+] Start polling fds ... \n";
         if (nbrfds < 0) 
             break ; // poll call fialed
         for (size_t i = 0; i < pfds.size(); i++) {
+            std::cout << "[+] verifying which fd wnat to receive or send ... \n";
             if (pfds[i].revents & POLLIN) {
                 if (pfds[i].fd == sockfd)
                     _accept();    // Listening descriptor is readable. 
@@ -22,42 +25,57 @@ server::server()
                     _receive(i); // check the receiving of data
             }
             if (pfds[i].revents & POLLOUT) {
+                // std::cout << "some send heere"
+                std::cout << "trying to send... \n";
                 respoo.get_content_type(_path);
-                respoo.response_generator(reqobj._status_code);
-                _msg = respoo._status_line;
-                _msg += respoo.server_name();
-                _msg += respoo.content_type();
-                _msg += respoo.date();
-                _msg += "\r\n";
-                // std::cout << _msg ;
-                byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
-                std::ifstream _file(_path, std::ios::in | std::ios::binary  | std::ios::ate);
-                if (!_file.is_open())
-                    std::cout << "error kabiiiiiir \n";
-                std::string buf;
-                std::streampos _fileSize = _file.tellg();
-                int contentLength = static_cast<int>(_fileSize);
-                std::cout << contentLength << '\n';
-                _file.close();
-                std::fstream file(_path, std::ios::in | std::ios::binary);
-                if (!file.is_open())
-                    std::cout << "error kabiiiiiir \n";
-                while (file.good())
-                {
-                    // std::cout << "inside the loop \n";
-                        memset(buffer, 0, sizeof(buffer));
-                        file.read(buffer, sizeof(buffer));
-                        buf += buffer;
-                        send(pfds[i].fd, buffer, file.gcount(), 0);
+                if (_total_size == get_file_size()) {
+                    _headers = respoo.headers_generator(reqobj._status_code);
+                    _msg += _headers;
+                    _total_size -= BUFFSIZE;
                 }
-                file.close();
-                if (byt_rcv < 0)
-                    std::cout << strerror(errno) << '\n';
-                close(pfds[i].fd);
-                pfds.erase(pfds.begin() + i);
+                // else {
+                    memset(buffer, 0, sizeof(BUFFSIZE));
+                    _msg += buffer;
+                    byt_rcv = send(pfds[i].fd, _msg.c_str(), BUFFSIZE, 0);
+                    if (byt_rcv < 0)
+                        std::cout << strerror(errno) << '\n';
+                    if (_total_size < BUFFSIZE) {
+                        std::cout << "end of transfer \n";
+                        file.close();
+                        close(pfds[i].fd);
+                        pfds.erase(pfds.begin() + i);
+                    }
+                    else
+                        _total_size -= BUFFSIZE;
+                    pos_read += byt_rcv;
+                // }
             }
         }
     }
+}
+
+// std::string	readFile(std::string filename)
+// {
+// 	std::ifstream 	file;
+// 	String text;
+// 	std::ostringstream streambuff;
+// 	file.open(filename, std::ios::binary);
+// 	if (file.is_open()) {
+// 		streambuff << file.rdbuf();
+// 		text = streambuff.str();
+// 		file.close();
+// 	}
+// 	return text;
+// }
+
+int server::get_file_size() {
+    std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!_file.is_open())
+        std::cout << "error kabiiiiiir \n";
+    std::streampos _fileSize = _file.tellg();
+    int contentLength = static_cast<int>(_fileSize);
+    _file.close();
+    return (contentLength);
 }
 
 void server::_getaddrinfo(void) {
@@ -156,6 +174,7 @@ void server::_receive(int index) {
         reqmsg.assign(buffer);
         reqobj.get_request(reqmsg);
         _path = reqobj._uri;
+        _total_size = get_file_size();
         pfds[index].events = POLLOUT;
     }
 }

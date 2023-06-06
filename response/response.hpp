@@ -8,6 +8,7 @@ class response {
 
     private:
         std::stringstream   ss;
+        std::string         _headers;
         std::string         _message;
         std::string         _content_type;
         std::string         _type;
@@ -19,7 +20,7 @@ class response {
     public:
         response();
         std::string         _status_line;
-        void response_generator(int coode);
+        std::string headers_generator(int coode);
         void GET_response(void);
         void POST_response(void);
         void DELETE_response(void);

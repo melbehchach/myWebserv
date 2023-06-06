@@ -1,6 +1,7 @@
 #include "request.hpp"
 
 request::request() {
+
 }
 
 void request::get_request(std::string& headers) {
