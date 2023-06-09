@@ -55,22 +55,36 @@ void request::httpv_checker(void) {
 void request::get_headers(void)
 {
     std::string tmp;
-    size_t pos;
+    int pos;
     size_t size;
+    int i = 0;
 
-    std::getline(_message, tmp, '\n');
-    while (std::getline(_message, tmp, '\n'))
+    while (!_message.eof())
     {
-        if (tmp.size() < 2)
-            break;
+        std::getline(_message, tmp, '\n');
         size = tmp.size();
+        if (tmp.size() < 2)
+            continue;
         pos = tmp.find(':');
-        _key = tmp.substr(0, pos);
-        _value = tmp.substr(pos, (size - pos));
+        if (pos == -1)
+            continue;
+        _key = tmp.substr(0, pos + 1);
+        _value = tmp.substr(pos + 2, (size - pos));
+        if (_key == "Content-Length:") {
+            std::istringstream iss(_value);
+            iss >> _content_length;
+        }
+        else if (_key == "Content-Type:") {
+            _content_type = _value;
+            i++; //  to stop from reading the stream
+            if (i == 2)
+                break;
+        }
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value) );
     }
     _message.str("");
     _message.clear();
+    // std::cout << "[ REQUEST ]\n";
     // for (it = _msgrequest.begin(); it != _msgrequest.end(); it++)
     //     std::cout << (*it).first << (*it).second << '\n';
     // _msgrequest.clear();

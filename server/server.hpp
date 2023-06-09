@@ -9,6 +9,8 @@
 
 #define PORT "9430"
 #define BUFFSIZE 1024
+
+
 class request;
 
 class server {
@@ -24,17 +26,21 @@ class server {
         int                         sockfd;
         int                         cltfd;
         int                         retval;
-        int                         byt_rcv;
+        size_t                      byt_rcv;
         int                         nbrfds;
-        char                        buffer[BUFFSIZE];
+        char                        buffer[1024];
         std::string                 reqmsg;
         request                     reqobj;
         response                    respoo;
         std::string                 _msg;
         std::string                 _path;
-        int                         _total_size;
         std::string                 _headers;
         int                         pos_read;
+        int                         retsend;
+        int                         bytToSend;
+        std::string                 _test;
+        std::ofstream               file;
+
         void    _getaddrinfo(void);
         int     _socket(void);
         int     _setsocket(void);
@@ -45,6 +51,7 @@ class server {
         void    _receive(int index);
         void    _add_fd(int fd);
         int     get_file_size(void);
+        std::string	readFile(void);
 
     public:
         server();

@@ -2,7 +2,8 @@
 #define RESPONSE_HPP
 
 #include "../header.hpp"
-
+#include "../request/request.hpp"
+#define BUFFSIZE 1024
 
 class response {
 
@@ -16,12 +17,18 @@ class response {
         std::string         _date;
         std::string         _server_name;
         std::string         _httpv;
+        std::string         _path;
+        // size_t              bytToSend;
+        // int                 retsend;
+        // int                 counter;
+        // request             requestObj;
+
 
     public:
         response();
         std::string         _status_line;
         std::string headers_generator(int coode);
-        void GET_response(void);
+        // void GET_response(std::vector<struct pollfd>& fds, int index, std::string& body, const std::string& path, int code);
         void POST_response(void);
         void DELETE_response(void);
         void content_length(void);
@@ -31,6 +38,8 @@ class response {
         std::string date(void);
         void get_error_message(int code);
         void get_content_type(const std::string& file);
+        // std::string	readFile(void);
+        // void send_response(std::vector<struct pollfd>& fds, int index, std::string& body, std::string& path, int code);
         ~response();
 };
 

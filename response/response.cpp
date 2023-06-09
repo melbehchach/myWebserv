@@ -20,28 +20,45 @@ std::string response::headers_generator(int coode) {
     return (_headers);
 }
 
-void response::GET_response(void) {
-    // respoo.get_content_type(_path);
-    // _msg = respoo.headers_generator(reqobj._status_code);
-    // if (_total_size == get_file_size())
-    //     byt_rcv = send(pfds[i].fd, _msg.c_str(), _msg.size(), 0);
-    // std::string buf;
-    // std::fstream file(_path, std::ios::in | std::ios::binary);
-    // if (!file.is_open())
-    //     std::cout << "error kabiiiiiir \n";
-    // while (file.good()) {
-    //     memset(buffer, 0, sizeof(buffer));
-    //     file.read(buffer, sizeof(buffer));
-    //     buf += buffer;
-    //     send(pfds[i].fd, buffer, file.gcount(), 0);
-    // }
-    // file.close();
-    // if (byt_rcv < 0)
-    //     std::cout << strerror(errno) << '\n';
-    // close(pfds[i].fd);
-    // pfds.erase(pfds.begin() + i);
 
-}
+// std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING
+// 	std::ifstream 	file;
+// 	std::string text;
+// 	std::ostringstream streambuff;
+
+// 	file.open();
+// 	if (file.is_open()) {
+// 		streambuff << file.rdbuf();
+// 		text = streambuff.str();
+// 	}
+// 	file.close();
+// 	return text;
+// }
+
+// void response::GET_response(std::vector<struct pollfd>& fds, int index, std::string& body, const std::string& filename, int code) {
+    // if (body.size() == 0) {
+    //     _path = filename;
+    //     get_content_type(filename);
+    //     body = headers_generator(code);
+    //     body += readFile();
+    // }
+    // if (body.size() > 0) {
+    //     bytToSend = body.size() / 10;
+    //     if (body.size() < BUFFSIZE)
+    //         bytToSend = body.size();
+    //     retsend = send(fds[index].fd, body.c_str(), bytToSend, 0);
+    //     if (retsend < 0)
+    //         std::cout << strerror(errno) << '\n';
+    //     body.erase(0, retsend);
+    // }
+    // else {
+    //     close(fds[index].fd);
+    //     fds.erase(fds.begin() + index);
+    //     body.erase();
+    // }
+// }
+
+
 
 void response::POST_response(void) {
 
@@ -79,7 +96,7 @@ std::string response::server_name(void) {
 std::string response::date(void) {
 
     // Get the current system time
-    std::time_t currentTime = std::time(nullptr);
+    std::time_t currentTime = std::time(NULL);
 
     // Convert the time_t object to a string
     char timeString[100];
@@ -91,6 +108,12 @@ std::string response::date(void) {
     _date += "\r\n";
     return (_date);
 }
+
+
+// void response::send_response(std::vector<struct pollfd>& fds, int index, std::string& body, const std::string& filename, int code) {
+
+// }
+
 
 
 void response::get_error_message(int code) {
