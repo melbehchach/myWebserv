@@ -69,7 +69,7 @@ void response::DELETE_response(void) {
 }
 
 void response::content_length(void) {
-
+    // requestObj._content_length
     
 }
 

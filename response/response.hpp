@@ -3,7 +3,7 @@
 
 #include "../header.hpp"
 #include "../request/request.hpp"
-#define BUFFSIZE 1024
+// #define BUFFSIZE 1024
 
 class response {
 

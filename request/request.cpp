@@ -57,7 +57,6 @@ void request::get_headers(void)
     std::string tmp;
     int pos;
     size_t size;
-    int i = 0;
 
     while (!_message.eof())
     {
@@ -73,12 +72,10 @@ void request::get_headers(void)
         if (_key == "Content-Length:") {
             std::istringstream iss(_value);
             iss >> _content_length;
+            std::cout << "content length == " << _content_length << '\n';
         }
         else if (_key == "Content-Type:") {
             _content_type = _value;
-            i++; //  to stop from reading the stream
-            if (i == 2)
-                break;
         }
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value) );
     }
