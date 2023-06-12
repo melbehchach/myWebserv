@@ -20,7 +20,6 @@ class request {
         std::string                         _key;
         std::string                         _value;
         std::string                         _content_type;
-        // response                            _httpResponse;
 
 
         
@@ -34,6 +33,7 @@ class request {
     public:
         std::string                         _method;
         std::string                         _uri;
+        std::string                         _boundary;
         int                                 _content_length;
         int                                 _status_code;
         request();

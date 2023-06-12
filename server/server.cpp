@@ -24,21 +24,16 @@ server::server() {
     bytToSend = 0;
 
     while (1) {
-        std::cout << "[+] Polling the sokcets..... \n";
         if (_poll() == -1) 
             break ; // poll call fialed
         for (size_t i = 0; i < pfds.size(); i++) {
-            // std::cout << "inside the loop \n";
-            // std::cout << "size of vector == " << pfds.size() << '\n';
             if (pfds[i].revents & POLLIN) {
-                // std::cout << "index  ===  " << i << '\n';
                 if (pfds[i].fd == sockfd)
                     _accept();    // Listening descriptor is readable. 
                 else
                     _receive(i); // check the receiving of data
             }
             else if (pfds[i].revents & POLLOUT) {
-                // std::cout << "time to send a response \n";
                 _msg = respoo.headers_generator(reqobj._status_code);
                 bytes_send = send(pfds[i].fd, _msg.c_str(), BUFFSIZE, 0);
                 if (bytes_send < 0) {
@@ -49,9 +44,6 @@ server::server() {
                 close(pfds[i].fd);
                 pfds.erase(pfds.begin() + i);
                 _msg.erase();
-            }
-            else {
-                // std::cout << "nothing to do \n";
             }
         }
     }
@@ -137,49 +129,42 @@ void server::_add_descriptor(int fd) {
 }
 
 void server::_receive(int index) {
-    bytes_rcv = 0;
     memset(buffer, 0, BUFFSIZE);
-    bytes_rcv = recv(pfds[index].fd, buffer, BUFFSIZE - 1, 0);
-    // buffer[bytes_rcv] = '\0';
+    bytes_rcv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
+    buffer[bytes_rcv] = '\0';
     if (bytes_rcv < 0) {
         std::cout << strerror(errno) << '\n';
         close(pfds[index].fd);
         pfds.erase(pfds.begin() + index);
         return ;
     }
-    // else {
-        _msg.append(buffer, bytes_rcv);
-        if (bytToSend == 0) {
-            // pos = 0;
-            reqmsg.assign(buffer);
-            reqobj.get_request(reqmsg);
-            _path = reqobj._uri;
-            pos = _msg.find("\r\n\r\n");
-            _msg.erase(0, pos);
-            // pos = _msg.find("Content-Type");
-            // _msg.erase(0, (pos + 22));
-            // std::cout << _msg;
-            // exit(1);
+    _msg.append(buffer, bytes_rcv);
+    if (bytToSend == 0) {
+        reqmsg.assign(buffer);
+        reqobj.get_request(reqmsg);
+        _path = reqobj._uri;
+        pos = _msg.find("\r\n\r\n");
+        _msg.erase(0, (pos + 4));
+        pos = _msg.find("Content-Type:");
+        _msg.erase(0, (pos + 27));
+        pos += 28;
+    }
+    bytToSend += bytes_rcv;
+    if ((bytToSend - pos) >= reqobj._content_length) {
+        std::cout << bytToSend << '\n';
+        pos = _msg.find("--");
+        if (pos != -1)
+            std::cout << "debug\n";
+        _msg.erase(pos, 56);
+        std::ofstream filo("test.mp4");
+        if (filo.is_open()) {
+            filo << _msg;
+            filo.close();
         }
-        // std::cout << "Debug 1 \n";
-        bytToSend += bytes_rcv;
-        if ((bytToSend - pos) >= reqobj._content_length) {
-            // std::cout << "Debug 2 \n";
-            std::cout << "pos of headers " << pos << '\n';
-            std::cout << "bytes received " << bytes_rcv << '\n';
-            std::cout << "############# " << (bytToSend  - pos )<< " ############\n";
-            // _msg.erase((_msg.size() - 58), 58);
-            // std::cout << buffer;
-            std::ofstream filo("test.mp4");
-            if (filo.is_open()) {
-                filo << _msg;
-                filo.close();
-            }
-            _msg.empty();
-            bytToSend = 0;
-            pfds[index].events = POLLOUT;
-        }
-    // }
+        _msg.erase();
+        bytToSend = 0;
+        pfds[index].events = POLLOUT;
+    }
 }
 
 

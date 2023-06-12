@@ -76,6 +76,10 @@ void request::get_headers(void)
         }
         else if (_key == "Content-Type:") {
             _content_type = _value;
+            if (_value.find("boundary") == std::string::npos) {
+                _msgrequest.insert( std::pair<std::string, std::string>(_key, _value) );
+                break;
+            }
         }
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value) );
     }

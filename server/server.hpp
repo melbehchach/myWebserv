@@ -40,6 +40,8 @@ class server {
         std::string                 _test;
         std::ofstream               file;
         int                         pos;
+        std::string                 _delimiter;
+        // int                         totalpos;
 
 
     // SERVER METHODS
