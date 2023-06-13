@@ -34,7 +34,6 @@ server::server() {
                     _receive(i); // check the receiving of data
             }
             else if (pfds[i].events & POLLOUT) {
-                std::cout << "time to respond \n";
                 _msg = respoo.headers_generator(reqobj._status_code);
                 bytes_send = send(pfds[i].fd, _msg.c_str(), BUFFSIZE, 0);
                 if (bytes_send < 0) {
