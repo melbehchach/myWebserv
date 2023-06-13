@@ -24,7 +24,7 @@ server::server() {
     bytToSend = 0;
 
     while (1) {
-        if (_poll() == -1) 
+        if (_poll() == -1)
             break ; // poll call fialed
         for (size_t i = 0; i < pfds.size(); i++) {
             if (pfds[i].revents & POLLIN) {
@@ -33,7 +33,8 @@ server::server() {
                 else
                     _receive(i); // check the receiving of data
             }
-            else if (pfds[i].revents & POLLOUT) {
+            else if (pfds[i].events & POLLOUT) {
+                std::cout << "time to respond \n";
                 _msg = respoo.headers_generator(reqobj._status_code);
                 bytes_send = send(pfds[i].fd, _msg.c_str(), BUFFSIZE, 0);
                 if (bytes_send < 0) {
@@ -145,18 +146,16 @@ void server::_receive(int index) {
         _path = reqobj._uri;
         pos = _msg.find("\r\n\r\n");
         _msg.erase(0, (pos + 4));
-        pos = _msg.find("Content-Type:");
+        pos = _msg.find("Content-Type: ");
         _msg.erase(0, (pos + 27));
-        pos += 28;
     }
     bytToSend += bytes_rcv;
-    if ((bytToSend - pos) >= reqobj._content_length) {
-        std::cout << bytToSend << '\n';
-        pos = _msg.find("--");
-        if (pos != -1)
-            std::cout << "debug\n";
-        _msg.erase(pos, 56);
-        std::ofstream filo("test.mp4");
+    if ((bytToSend >= (reqobj._content_length + bytes_rcv))
+            || ((bytToSend >= reqobj._content_length) && (bytToSend < BUFFSIZE))) { // if total file size bigger than BUFFSIZE or not
+        pos = _msg.find("----------------------------");
+        if (pos != -1) // check the last boundary
+            _msg.erase(pos, 54);
+        std::ofstream filo("test.html");
         if (filo.is_open()) {
             filo << _msg;
             filo.close();
@@ -166,7 +165,6 @@ void server::_receive(int index) {
         pfds[index].events = POLLOUT;
     }
 }
-
 
 // void server::filter_request(const char buf[]) {
 //     std::stringstream _content;
