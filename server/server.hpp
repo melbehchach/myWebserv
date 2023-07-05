@@ -23,24 +23,24 @@ class server {
         struct sockaddr_in          client;
         struct pollfd               pollfds;
         socklen_t                   clientaddrln;
-        char                        buffer[16000];
-        int                         sockfd;
-        int                         cltfd;
-        int                         bytes_rcv;
-        int                         bytes_send;
-        request                     reqobj;
-        response                    respoo;
+        request                     _request;
+        response                    _response;
+        std::ofstream               file;
+        std::stringstream           _bodyStream;
         std::string                 reqmsg;
-        std::string                 _msg;
+        std::string                 _body;
         std::string                 _path;
         std::string                 _headers;
-        int                         pos_read;
-        // int                         retsend;
-        int                         bytToSend;
         std::string                 _test;
-        std::ofstream               file;
-        int                         pos;
         std::string                 _delimiter;
+        char                        buffer[16000];
+        int                         sockfd;
+        int                         bytesSend;
+        int                         cltfd;
+        int                         bytesRecv;
+        int                         bytesCounter;
+        int                         headersSize;
+        int                         pos;
         // int                         totalpos;
 
 

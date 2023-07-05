@@ -11,32 +11,32 @@ class request {
 
     private:
         
-        std::multimap<std::string, std::string>             _msgrequest;
-        std::multimap<std::string, std::string>::iterator   it;
 
         std::stringstream                   _message;
-        std::string                         _reqHeaders;
         std::string                         _http;
         std::string                         _key;
         std::string                         _value;
-        std::string                         _content_type;
 
-
-        
-        void method_checker(void);
-        void uri_checker(void);
-        void httpv_checker(void);
-        bool get_request_line(void);
+        bool check_request_line(void);
         void get_headers(void);
-
+        void get_body_info(void);
 
     public:
+        request();
+        std::multimap<std::string, std::string>             _msgrequest;
+        std::multimap<std::string, std::string>::iterator   it;
         std::string                         _method;
         std::string                         _uri;
         std::string                         _boundary;
+        std::string                         _connexion;
+        std::string                         _filename;
+        std::string                         _content_type;
+        std::string                         _body;
+        std::string                         _headers;
         int                                 _content_length;
         int                                 _status_code;
-        request();
+        int                                 _body_info_size;
+
         ~request();
         void    get_request(std::string& headres);
 

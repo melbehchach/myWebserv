@@ -13,11 +13,11 @@ class response {
         std::string         _message;
         std::string         _content_type;
         std::string         _type;
-        std::string         _content_length;
         std::string         _date;
         std::string         _server_name;
         std::string         _httpv;
         std::string         _path;
+        // request             _request;
         // size_t              bytToSend;
         // int                 retsend;
         // int                 counter;
@@ -28,6 +28,7 @@ class response {
         response();
         std::string         _status_line;
         std::string headers_generator(int coode);
+        // int                 _content_length;
         // void GET_response(std::vector<struct pollfd>& fds, int index, std::string& body, const std::string& path, int code);
         void POST_response(void);
         void DELETE_response(void);

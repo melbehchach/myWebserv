@@ -10,7 +10,7 @@ server::server() {
     if (!_setsocket()) 
         exit(1);
 
-    if (!_bind())
+    if (!_bind()) // in case of error must close the listner
         exit(1);
 
     freeaddrinfo(result); 
@@ -18,32 +18,33 @@ server::server() {
     if(!_listen())
         exit(1);
 
-    _add_descriptor(sockfd); 
+    _add_descriptor(sockfd);
     
-    pos_read = 0;
-    bytToSend = 0;
-
+    // pos_read = 0;
+    bytesCounter = 0;
     while (1) {
         if (_poll() == -1)
             break ; // poll call fialed
         for (size_t i = 0; i < pfds.size(); i++) {
             if (pfds[i].revents & POLLIN) {
                 if (pfds[i].fd == sockfd)
-                    _accept();    // Listening descriptor is readable. 
+                    _accept();   // Listening descriptor is readable. 
                 else
                     _receive(i); // check the receiving of data
             }
             else if (pfds[i].events & POLLOUT) {
-                _msg = respoo.headers_generator(reqobj._status_code);
-                bytes_send = send(pfds[i].fd, _msg.c_str(), BUFFSIZE, 0);
-                if (bytes_send < 0) {
+                _body = _response.headers_generator(_request._status_code);
+                bytesSend = send(pfds[i].fd, _body.c_str(), BUFFSIZE, 0);
+                if (bytesSend < 0) {
                     std::cout << strerror(errno) << '\n';
                     close(pfds[i].fd);
                     pfds.erase(pfds.begin() + i);
                 }
-                close(pfds[i].fd);
-                pfds.erase(pfds.begin() + i);
-                _msg.erase();
+                // if (_request._connexion != "keep-alive") {
+                    close(pfds[i].fd);
+                    pfds.erase(pfds.begin() + i);
+                    _body.erase();
+                // }
             }
         }
     }
@@ -65,7 +66,9 @@ bool server::_getaddrinfo(void) {
 
 int server::_socket(void) {
     sockfd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (sockfd < 0 || (fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0)) {
+    if (sockfd < 0) {
+        if ((fcntl(sockfd, F_SETFL, O_NONBLOCK) < 0)) //  to check the non blocking after tests
+            std::cout << strerror(errno);
         std::cout << strerror(errno);
         exit (1);
     }
@@ -129,92 +132,90 @@ void server::_add_descriptor(int fd) {
 }
 
 void server::_receive(int index) {
+    // int tmppos = 0;
+    // int poss = 0;
+    // int size = -1;
+    std::string tmpBody;
+    std::string tmp;
+    
     memset(buffer, 0, BUFFSIZE);
-    bytes_rcv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
-    buffer[bytes_rcv] = '\0';
-    if (bytes_rcv < 0) {
+    bytesRecv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
+    if (bytesRecv < 0) {
         std::cout << strerror(errno) << '\n';
         close(pfds[index].fd);
         pfds.erase(pfds.begin() + index);
-        return ;
+        exit(0) ;
     }
-    _msg.append(buffer, bytes_rcv);
-    if (bytToSend == 0) {
+    tmpBody += buffer;
+    if (bytesCounter == 0) { // stor headers in a multi-map and erase them from the body
         reqmsg.assign(buffer);
-        reqobj.get_request(reqmsg);
-        _path = reqobj._uri;
-        pos = _msg.find("\r\n\r\n");
-        _msg.erase(0, (pos + 4));
-        pos = _msg.find("Content-Type: ");
-        _msg.erase(0, (pos + 27));
+        _request.get_request(reqmsg);
+        _path = _request._uri;
+        pos = tmpBody.find(_request._headers); // find headers and erase theme + erase request line 
+        if (pos != -1) {
+            std::cout << "HEADER FOUND" << std::endl;
+            headersSize = _request._headers.size() + pos + _request._body_info_size + 5 + 5 + 2; // 5 for the size of boundary + content disposition + content-type + \n
+            // headersSize = _request._headers.size() + pos;
+            tmpBody.erase(0, headersSize);
+            _request._boundary.insert((_request._boundary.size() - 1), "--");
+            _request._headers.erase();
+            pos = -1;
+        }
     }
-    bytToSend += bytes_rcv;
-    if ((bytToSend >= (reqobj._content_length + bytes_rcv))
-            || ((bytToSend >= reqobj._content_length) && (bytToSend < BUFFSIZE))) { // if total file size bigger than BUFFSIZE or not
-        pos = _msg.find("----------------------------");
-        if (pos != -1) // check the last boundary
-            _msg.erase(pos, 54);
-        std::ofstream filo("test.html");
+    bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
+    // std::cout << bytesCounter << std::endl;c
+    if ((bytesCounter + headersSize) > _request._content_length) {
+        // _bodyStream << tmpBody;
+        _body = tmpBody;
+        pos = _body.find(_request._boundary);
+        // std::streampos size = _bodyStream.tellp();
+        std::cout << "BODY SIZE: " << tmpBody.size() << std::endl;
+        std::cout << "CONTENT LENGTH: " << _request._content_length << std::endl;
+        std::cout << "BYTES COUNTER: " << bytesCounter << std::endl;
+    }
+    if (pos != -1) {
+        std::cout << "OUT OF CONDITION" << std::endl;
+        // _body = _bodyStream.str();
+        _body.erase(pos, (_request._boundary.size())); // erase last boundary
+        // std::cout << _body << std::endl;
+        std::ofstream filo(_request._filename);
         if (filo.is_open()) {
-            filo << _msg;
+            filo << _body;
             filo.close();
         }
-        _msg.erase();
-        bytToSend = 0;
+        bytesCounter = 0;
+        _body.erase();
+        _bodyStream.str("");
+        _bodyStream.clear();
+        // _request._msgrequest.clear();
         pfds[index].events = POLLOUT;
     }
 }
 
-// void server::filter_request(const char buf[]) {
-//     std::stringstream _content;
-
-
-// }
-
-
 server::~server() {}
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // GET METHOD
-// if (reqobj._method == "GET") {
+// if (_request._method == "GET") {
 //     std::cout << "GET method \n";
 //     if (pos_read == 0) {
-//         respoo.get_content_type(_path);
-//         _msg = respoo.headers_generator(reqobj._status_code);
-//         _msg += readFile();
+//         _response.get_content_type(_path);
+//         _body = _response.headers_generator(_request._status_code);
+//         _body += readFile();
 //         pos_read++;
 //     }
-//     if (_msg.size() > 0) {
-//         bytToSend = _msg.size() / 10;
-//         if (_msg.size() < BUFFSIZE)
-//             bytToSend = _msg.size();
-//         bytes_send = send(pfds[i].fd, _msg.c_str(), bytToSend, 0);
-//         if (bytes_send < 0)
+//     if (_body.size() > 0) {
+//         bytesCounter = _body.size() / 10;
+//         if (_body.size() < BUFFSIZE)
+//             bytesCounter = _body.size();
+//         bytesSend = send(pfds[i].fd, _body.c_str(), bytesCounter, 0);
+//         if (bytesSend < 0)
 //             std::cout << strerror(errno) << '\n';
-//         _msg.erase(0, bytes_send);
+//         _body.erase(0, bytesSend);
 //     }
 //     else {
 //         close(pfds[i].fd);
 //         pfds.erase(pfds.begin() + i);
-//         _msg.erase();
+//         _body.erase();
 //         pos_read = 0;
 //     }
 // }
@@ -245,3 +246,81 @@ server::~server() {}
 
 
 
+// NORMAL TRANSFER (RECEIVE) OF DATA "POST METHOD"
+    // memset(buffer, 0, BUFFSIZE);
+    // bytesRecv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
+    // if (bytesRecv < 0) {
+    //     std::cout << strerror(errno) << '\n';
+    //     close(pfds[index].fd);
+    //     pfds.erase(pfds.begin() + index);
+    //     exit(0) ;
+    // }
+    // _body.append(buffer, bytesRecv);
+    // if (bytesCounter == 0) { // stor headers in a multi-map and erase them from the body
+    //     reqmsg.assign(buffer);
+    //     _request.get_request(reqmsg);
+    //     _path = _request._uri;
+    //     pos = _body.find(_request._headers); // find headers and erase theme + erase request line 
+    //     if (pos != -1) {
+    //         headersSize = _request._headers.size() + pos + _request._body_info_size + 5;
+    //         _body.erase(0, headersSize);
+    //         _request._boundary.insert((_request._boundary.size() - 1), "--");
+    //         pos = -1;
+    //     }
+    // }
+    // bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
+    // if ((bytesCounter + headersSize) > _request._content_length)
+    //     pos = _body.find(_request._boundary);
+    // if (pos != -1) {
+    //     _body.erase(pos, (_request._boundary.size())); // erase last boundary
+    //     std::ofstream filo(_request._filename);
+    //     if (filo.is_open()) {
+    //         filo << _body;
+    //         filo.close();
+    //     }
+    //     bytesCounter = 0;
+    //     _body.erase();
+    //     pfds[index].events = POLLOUT;
+    // }
+
+
+
+
+
+
+
+
+
+
+
+        // tmp = " ";
+    // while(1) {
+    //     getline(test, tmp, '\n');
+    //     // std::cout << "debug 1 \n";
+    //     std::cout << "line ==> " << tmp;
+    //     try
+    //     {
+    //         size = std::stoul(tmp, nullptr, 16);
+    //         // std::cout << "size -=== " << size << std::endl;
+    //     }
+    //     catch(const std::exception& e)
+    //     {
+    //         // std::cerr << e.what() << '\n';
+    //         size = -1;
+    //         // continue;
+    //     }
+    //     if (size != -1 && tmp.size() <= 7) {
+    //         // std::cout << "debug 2" << std::endl;
+    //         // std::cout << "size == " << size << std::endl;
+    //         poss = tmpBody.find(tmp);
+    //         // std::cout << "line ==> " << tmp << std::endl;
+    //         // std::cout << tmp.size() << std::endl;
+    //         // std::cout << poss << std::endl;
+    //         tmpBody.erase(poss, tmp.size() + 1);
+    //     }
+    //     else if (tmp.size() == 0 && test.eof()) {
+    //         break;
+    //     }
+    //     else if (size == 0)
+    //         break;
+    // }

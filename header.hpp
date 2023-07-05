@@ -19,8 +19,9 @@
 #include <unistd.h> // sysconf(), _SC_OPEN_MAX
 #include <cstdio>
 #include <ctime>
+#include <string.h>
 // #include "./server/server.hpp"
-// #include "./request/request.hpp"
+#include "./request/request.hpp"
 
 
 

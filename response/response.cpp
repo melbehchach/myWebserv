@@ -1,6 +1,8 @@
 #include "response.hpp"
 
-response::response() {}
+response::response() {
+    
+}
 
 std::string response::headers_generator(int coode) {
 
@@ -69,8 +71,7 @@ void response::DELETE_response(void) {
 }
 
 void response::content_length(void) {
-    // requestObj._content_length
-    
+    // content_length = _request._content_length;
 }
 
 std::string response::content_type(void) {
