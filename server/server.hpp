@@ -33,6 +33,10 @@ class server {
         std::string                 _headers;
         std::string                 _test;
         std::string                 _delimiter;
+        std::string                 tmpBody;
+        std::string                 tmp;
+        std::string                 hex;
+        std::stringstream           test;
         char                        buffer[16000];
         int                         sockfd;
         int                         bytesSend;

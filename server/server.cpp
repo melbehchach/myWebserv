@@ -132,11 +132,9 @@ void server::_add_descriptor(int fd) {
 }
 
 void server::_receive(int index) {
-    // int tmppos = 0;
-    // int poss = 0;
-    // int size = -1;
-    std::string tmpBody;
-    std::string tmp;
+
+    // int size = 0;
+    int poss = 0;
     
     memset(buffer, 0, BUFFSIZE);
     bytesRecv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
@@ -146,38 +144,53 @@ void server::_receive(int index) {
         pfds.erase(pfds.begin() + index);
         exit(0) ;
     }
-    tmpBody += buffer;
+    _body.append(buffer, bytesRecv);
     if (bytesCounter == 0) { // stor headers in a multi-map and erase them from the body
         reqmsg.assign(buffer);
         _request.get_request(reqmsg);
         _path = _request._uri;
-        pos = tmpBody.find(_request._headers); // find headers and erase theme + erase request line 
+        pos = _body.find(_request._headers); // find headers and erase theme + erase request line 
         if (pos != -1) {
-            std::cout << "HEADER FOUND" << std::endl;
-            headersSize = _request._headers.size() + pos + _request._body_info_size + 5 + 5 + 2; // 5 for the size of boundary + content disposition + content-type + \n
+            // std::cout << "HEADER FOUND" << std::endl;
+            headersSize = _request._headers.size() + pos + _request._body_info_size + 5 + 5 + 1; // 5 for the size of boundary + content disposition + content-type + \n
             // headersSize = _request._headers.size() + pos;
-            tmpBody.erase(0, headersSize);
+            _body.erase(0, headersSize);
             _request._boundary.insert((_request._boundary.size() - 1), "--");
             _request._headers.erase();
             pos = -1;
         }
     }
     bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
-    // std::cout << bytesCounter << std::endl;c
+    // test << _body;
+    // while(1) {
+    //     getline(test, tmp, '\n');
+    //     try
+    //     {
+    //         size = std::stoul(tmp, nullptr, 16);
+    //     }
+    //     catch(const std::exception& e)
+    //     {
+    //         size = -1;
+    //     }
+    //     if (size != -1 && tmp.size() <= 7) {
+    //         poss = _body.find(tmp);
+    //         std::cout << "line ==> " << tmp << tmp.size() << " " << size << " " << poss << "\n";
+    //         _body.erase(poss, tmp.size() + 2);
+    //     }
+    //     if (test.eof()) {
+    //         test.str() = "";
+    //         break;
+    //     }
+    // }
+    // _body.append(_body, tmpBody.size());
     if ((bytesCounter + headersSize) > _request._content_length) {
-        // _bodyStream << tmpBody;
-        _body = tmpBody;
         pos = _body.find(_request._boundary);
-        // std::streampos size = _bodyStream.tellp();
-        std::cout << "BODY SIZE: " << tmpBody.size() << std::endl;
-        std::cout << "CONTENT LENGTH: " << _request._content_length << std::endl;
-        std::cout << "BYTES COUNTER: " << bytesCounter << std::endl;
     }
     if (pos != -1) {
-        std::cout << "OUT OF CONDITION" << std::endl;
+        // std::cout << tmpBody;
+        // std::cout << "OUT OF CONDITION" << std::endl;
         // _body = _bodyStream.str();
         _body.erase(pos, (_request._boundary.size())); // erase last boundary
-        // std::cout << _body << std::endl;
         std::ofstream filo(_request._filename);
         if (filo.is_open()) {
             filo << _body;
@@ -262,7 +275,7 @@ server::~server() {}
     //     _path = _request._uri;
     //     pos = _body.find(_request._headers); // find headers and erase theme + erase request line 
     //     if (pos != -1) {
-    //         headersSize = _request._headers.size() + pos + _request._body_info_size + 5;
+    //         headersSize = _request._headers.size() + pos + _request._body_info_size + 5;  5 for the size of boundary + content disposition + content-type + \n
     //         _body.erase(0, headersSize);
     //         _request._boundary.insert((_request._boundary.size() - 1), "--");
     //         pos = -1;
@@ -293,34 +306,3 @@ server::~server() {}
 
 
 
-        // tmp = " ";
-    // while(1) {
-    //     getline(test, tmp, '\n');
-    //     // std::cout << "debug 1 \n";
-    //     std::cout << "line ==> " << tmp;
-    //     try
-    //     {
-    //         size = std::stoul(tmp, nullptr, 16);
-    //         // std::cout << "size -=== " << size << std::endl;
-    //     }
-    //     catch(const std::exception& e)
-    //     {
-    //         // std::cerr << e.what() << '\n';
-    //         size = -1;
-    //         // continue;
-    //     }
-    //     if (size != -1 && tmp.size() <= 7) {
-    //         // std::cout << "debug 2" << std::endl;
-    //         // std::cout << "size == " << size << std::endl;
-    //         poss = tmpBody.find(tmp);
-    //         // std::cout << "line ==> " << tmp << std::endl;
-    //         // std::cout << tmp.size() << std::endl;
-    //         // std::cout << poss << std::endl;
-    //         tmpBody.erase(poss, tmp.size() + 1);
-    //     }
-    //     else if (tmp.size() == 0 && test.eof()) {
-    //         break;
-    //     }
-    //     else if (size == 0)
-    //         break;
-    // }
