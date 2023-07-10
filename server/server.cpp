@@ -132,10 +132,6 @@ void server::_add_descriptor(int fd) {
 }
 
 void server::_receive(int index) {
-
-    // int size = 0;
-    int poss = 0;
-    
     memset(buffer, 0, BUFFSIZE);
     bytesRecv = recv(pfds[index].fd, buffer, (BUFFSIZE - 1), 0);
     if (bytesRecv < 0) {
@@ -149,9 +145,9 @@ void server::_receive(int index) {
         reqmsg.assign(buffer);
         _request.get_request(reqmsg);
         _path = _request._uri;
-        pos = _body.find(_request._headers); // find headers and erase theme + erase request line 
+        pos = _body.find(_request._headers); // find headers and erase theme + erase request line
         if (pos != -1) {
-            // std::cout << "HEADER FOUND" << std::endl;
+            // std::cout << _request._body_info_size << std::endl;
             headersSize = _request._headers.size() + pos + _request._body_info_size + 5 + 5 + 1; // 5 for the size of boundary + content disposition + content-type + \n
             // headersSize = _request._headers.size() + pos;
             _body.erase(0, headersSize);
@@ -161,39 +157,58 @@ void server::_receive(int index) {
         }
     }
     bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
-    // test << _body;
-    // while(1) {
-    //     getline(test, tmp, '\n');
-    //     try
-    //     {
-    //         size = std::stoul(tmp, nullptr, 16);
-    //     }
-    //     catch(const std::exception& e)
-    //     {
-    //         size = -1;
-    //     }
-    //     if (size != -1 && tmp.size() <= 7) {
-    //         poss = _body.find(tmp);
-    //         std::cout << "line ==> " << tmp << tmp.size() << " " << size << " " << poss << "\n";
-    //         _body.erase(poss, tmp.size() + 2);
-    //     }
-    //     if (test.eof()) {
-    //         test.str() = "";
-    //         break;
-    //     }
-    // }
-    // _body.append(_body, tmpBody.size());
-    if ((bytesCounter + headersSize) > _request._content_length) {
-        pos = _body.find(_request._boundary);
-    }
-    if (pos != -1) {
-        // std::cout << tmpBody;
-        // std::cout << "OUT OF CONDITION" << std::endl;
-        // _body = _bodyStream.str();
-        _body.erase(pos, (_request._boundary.size())); // erase last boundary
+    pos = _body.find(_request._boundary);
+    if (pos  != -1) {
+        // std::cout << pos << std::endl;
+        // std::cout << _body.size() << std::endl;
+        // _body.erase(pos, (_request._boundary.size())); // erase last boundary
+        int poss = 0;
+        int x;
+        std::stringstream ss;
+        tmpBody = ft_split(_body, "\r\n");
+        for (size_t i = 0; i < tmpBody.size(); i++) {
+            if ((tmpBody[i].size() > 0) && (tmpBody[i].size() < 6)) {
+                try {
+                    x = std::stoul(tmpBody[i], nullptr, 16);
+                }
+                catch (const std::exception& e)
+                {
+                    x = -1;
+                }
+                if (x != -1) {
+                    sizeVec.push_back(tmpBody[i]);
+                }
+            }
+        }
+        // poss = 0;
+        for (size_t i = 0; i < (sizeVec.size() - 2); i++) {
+            poss = _body.find(sizeVec[i]);
+            if (poss != -1) {
+                x = std::stoul(sizeVec[i], nullptr, 16);
+                // std::cout << x << std::endl;
+                _test2 = _body.substr((poss + sizeVec[i].size() + 2), x);
+                _test.append(_test2);
+                _body.erase(poss, (sizeVec[i].size() + 2));
+                // std::cout << sizeVec[i] << std::endl;
+            }
+        }
+        // poss = _body.find("3a\r\n");
+        // if (poss != -1)
+        //     _body.erase(poss, 4);
+        // poss = _body.find("0\r\n");
+        // if (poss != -1)
+        //     _body.erase(poss, 3);
+        // _body.erase((_body.size() - 2), 2);
+        // while (((pos = _body.find("\r\n")) != -1) && ((size_t)pos < _body.size()))
+        // {
+        //     std::cout << pos << std::endl;
+        //     _body.erase(pos, 2);
+        // }
+        // _body.erase(_body.size() - 2);
+        // std::cout << _test;
         std::ofstream filo(_request._filename);
         if (filo.is_open()) {
-            filo << _body;
+            filo << _test;
             filo.close();
         }
         bytesCounter = 0;
@@ -206,6 +221,41 @@ void server::_receive(int index) {
 }
 
 server::~server() {}
+
+std::vector<std::string> server::ft_split(const std::string &str, const std::string &del) {
+	std::vector<std::string> res;
+
+	std::size_t pos = 0;
+	std::size_t prev = 0;
+	while ((pos = str.find(del, prev)) != std::string::npos) {
+		if (str.substr(prev, pos - prev) != "")
+			res.push_back(str.substr(prev, pos - prev));
+		prev = pos + del.size();
+	}
+	if (str.substr(prev) != "")
+		res.push_back(str.substr(prev));
+	return res;
+}
+
+// std::vector<std::string> server::ft_split(std::string const &str,  const std::string &del) {
+// 	size_t start = 0;
+// 	size_t end = 0;
+// 	std::string key;
+// 	std::vector<std::string> vec;
+// 	for (std::string::size_type i = 0; i < str.size(); i++) {
+// 		start = str.find(del, i);
+// 		if (start == std::string::npos)
+// 			break;
+//         start += del.size();
+// 		end = str.find(del, start);
+// 		key = str.substr(start, end - start);
+// 		vec.push_back(key);
+// 		if (end == std::string::npos)
+// 			break;
+// 		i = end;
+// 	}
+// 	return vec;
+// }
 
 // GET METHOD
 // if (_request._method == "GET") {

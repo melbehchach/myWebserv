@@ -79,6 +79,7 @@ void request::get_headers(void) {
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value));
     }
     // std::cout << _headers << std::endl;
+    // std::cout << _headers.size() << std::endl;
 }
 
 // void request::get_body_info(void) {
@@ -127,9 +128,9 @@ void request::get_body_info(void) {
             _content_type = tmp.substr((pos + 2), (size - pos));
         }
     }
-    // std::cout << _boundary << '\n';
-    // std::cout << _filename << '\n';
-    // std::cout << _content_type << '\n';
+    // std::cout << _boundary << std::endl;
+    // std::cout << _filename << std::endl;
+    // std::cout << _content_type << std::endl;
 }
 
 request::~request() {}

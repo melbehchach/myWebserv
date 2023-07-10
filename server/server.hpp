@@ -32,8 +32,8 @@ class server {
         std::string                 _path;
         std::string                 _headers;
         std::string                 _test;
+        std::string                 _test2;
         std::string                 _delimiter;
-        std::string                 tmpBody;
         std::string                 tmp;
         std::string                 hex;
         std::stringstream           test;
@@ -45,19 +45,22 @@ class server {
         int                         bytesCounter;
         int                         headersSize;
         int                         pos;
-        // int                         totalpos;
+        std::vector<std::string>    bodyVec;
+        std::vector<std::string>    tmpBody;
+        std::vector<std::string>    sizeVec;
 
 
     // SERVER METHODS
-        bool    _getaddrinfo(void);
-        int     _socket(void);
-        bool    _setsocket(void);
-        bool    _bind(void);
-        bool    _listen(void);
-        int     _accept(void);
-        int     _poll(void);
-        void    _receive(int index);
-        void    _add_descriptor(int fd);
+        bool                        _getaddrinfo(void);
+        int                         _socket(void);
+        bool                        _setsocket(void);
+        bool                        _bind(void);
+        bool                        _listen(void);
+        int                         _accept(void);
+        int                         _poll(void);
+        void                        _receive(int index);
+        void                        _add_descriptor(int fd);
+        std::vector<std::string>    ft_split(const std::string &str, const std::string &del);
 
     
         // int     get_file_size(void);
