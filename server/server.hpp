@@ -40,7 +40,8 @@ class server {
         int                         clinetFd;
         int                         bytesRecv;
         int                         bytesCounter;
-        int                         position;
+        int                         position1;
+        int                         position2;
 
 
     // SERVER METHODS

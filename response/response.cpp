@@ -19,6 +19,7 @@ std::string response::headers_generator(int coode) {
     _headers += content_type();
     _headers += "\r\n";
     ss.str("");
+    ss.clear();
     return (_headers);
 }
 

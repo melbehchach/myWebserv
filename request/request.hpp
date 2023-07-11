@@ -31,6 +31,7 @@ class request {
         std::string                         _method;
         std::string                         _uri;
         std::string                         _boundary;
+        std::string                         _finaleBoundary;
         std::string                         _connexion;
         std::string                         _filename;
         std::string                         _content_type;
@@ -42,8 +43,9 @@ class request {
         int                                 _body_info_size;
         int                                 position;
         int                                 _chunkSize;
-        bool                                _transfer;
+        bool                                _chunkedTransfer;
         int                                 headersSize;
+        int                                 _nbrFiles;
 
 
 

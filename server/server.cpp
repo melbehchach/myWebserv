@@ -34,7 +34,7 @@ server::server() {
             }
             else if (pfds[i].events & POLLOUT) {
                 _body = _response.headers_generator(_request._status_code);
-                bytesSend = send(pfds[i].fd, _body.c_str(), BUFFSIZE, 0);
+                bytesSend = send(pfds[i].fd, _body.c_str(), _body.size(), 0);
                 if (bytesSend < 0) {
                     std::cout << strerror(errno) << '\n';
                     close(pfds[i].fd);
@@ -145,14 +145,32 @@ void server::_receive(int index) {
         _request._ParseRequestHeaders(_tmpBody);
         _path = _request._uri;
     }
+    bytesCounter += bytesRecv; //to accelerate the receive the data by not checking the body every time
     if (_request._method == "POST") {
-        bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
-        position = _tmpBody.find(_request._boundary); // find the last boundary
-        if (position  != -1) { // End of receiving
-            if (_request._transfer)
+        // IN CASE WE HAVE ANOTHER FILE
+        position1 = _tmpBody.find(_request._boundary);
+        if (position1 != -1) {
+            _request._nbrFiles = 1;
+            _request._ParseRequestHeaders(_tmpBody);
+            _body.append(_tmpBody, (_tmpBody.size() - position1));
+            if (_request._chunkedTransfer)
+                _request._parseChunkedRequestBody(_body);
+            else
+                _request._parseNormalRequestBody(_body, position1);
+            _tmpBody.erase(0, (position1 + _request._boundary.size() + 2));
+            _body.clear();
+        }
+
+
+
+        // FINALE STAPE
+        position2 = _tmpBody.find(_request._finaleBoundary); // find the last boundary
+        if (position2  != -1) { // End of receiving
+            if (_request._chunkedTransfer)
                 _request._parseChunkedRequestBody(_tmpBody);
             else
-                _request._parseNormalRequestBody(_tmpBody, position);
+                _request._parseNormalRequestBody(_tmpBody, position2);
+            _tmpBody.erase(0, position2);
             bytesCounter = 0;
             _tmpBody.clear();
             pfds[index].events = POLLOUT;

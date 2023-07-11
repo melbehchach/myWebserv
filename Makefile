@@ -26,4 +26,4 @@ fclean: clean
 re : fclean all
 
 
-#  -g -fsanitize=address,undefined,integer
+#   -g -fsanitize=address,undefined,integer
