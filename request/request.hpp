@@ -24,7 +24,10 @@ class request {
     public:
         request();
         std::multimap<std::string, std::string>             _msgrequest;
-        std::multimap<std::string, std::string>::iterator   it;
+        std::multimap<std::string, std::string>::iterator   _it;
+        std::vector<std::string>            _chunksVector;
+        std::vector<std::string>            _chunkSizeVector;
+        // std::ofstream                       file;
         std::string                         _method;
         std::string                         _uri;
         std::string                         _boundary;
@@ -33,12 +36,24 @@ class request {
         std::string                         _content_type;
         std::string                         _body;
         std::string                         _headers;
+        std::string                         _chunks;
         int                                 _content_length;
         int                                 _status_code;
         int                                 _body_info_size;
+        int                                 position;
+        int                                 _chunkSize;
+        bool                                _transfer;
+        int                                 headersSize;
+
+
+
+        void                                get_request(std::string& headres);
+        void                                _ParseRequestHeaders(std::string& tmpBody);
+        void                                _parseChunkedRequestBody(std::string &tmpBody);
+        void                                _parseNormalRequestBody(std::string &tmpBody, int boundaryPosition);
+        std::vector<std::string>            ft_split(const std::string &str, const std::string &del);
 
         ~request();
-        void    get_request(std::string& headres);
 
 };
 

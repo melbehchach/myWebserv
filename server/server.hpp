@@ -17,6 +17,7 @@ class server {
     
 
     private:
+    // SERVER ATTRIBUTS
         std::vector<struct pollfd>  pfds;
         struct addrinfo             hints;
         struct addrinfo             *result;
@@ -25,29 +26,21 @@ class server {
         socklen_t                   clientaddrln;
         request                     _request;
         response                    _response;
+        std::vector<std::string>    _chunksVector;
+        std::vector<std::string>    _chunkSizeVector;
         std::ofstream               file;
-        std::stringstream           _bodyStream;
-        std::string                 reqmsg;
         std::string                 _body;
         std::string                 _path;
         std::string                 _headers;
-        std::string                 _test;
-        std::string                 _test2;
-        std::string                 _delimiter;
-        std::string                 tmp;
-        std::string                 hex;
-        std::stringstream           test;
+        std::string                 _tmpBody;
+        std::string                 _chunks;
         char                        buffer[16000];
-        int                         sockfd;
+        int                         socketFd;
         int                         bytesSend;
-        int                         cltfd;
+        int                         clinetFd;
         int                         bytesRecv;
         int                         bytesCounter;
-        int                         headersSize;
-        int                         pos;
-        std::vector<std::string>    bodyVec;
-        std::vector<std::string>    tmpBody;
-        std::vector<std::string>    sizeVec;
+        int                         position;
 
 
     // SERVER METHODS
@@ -60,7 +53,6 @@ class server {
         int                         _poll(void);
         void                        _receive(int index);
         void                        _add_descriptor(int fd);
-        std::vector<std::string>    ft_split(const std::string &str, const std::string &del);
 
     
         // int     get_file_size(void);
