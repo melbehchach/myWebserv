@@ -11,7 +11,7 @@ void request::get_request(std::string& headers) {
         get_headers();
         get_body_info();
     }
-    else
+    else 
         get_body_info();
     _message.str("");
     _message.clear();
@@ -87,13 +87,13 @@ void request::get_body_info(void) {
     std::string tmp;
     int         size;
     int         pos;
-
+    
     _it = _msgrequest.find("Transfer-Encoding:");
     if (_it != _msgrequest.end()) {
         _chunkedTransfer = true;
         std::getline(_message, tmp, '\n');
     }
-    else
+    else 
         _chunkedTransfer = false;
     for (int i = 0; i < 3; i++) {
         std::getline(_message, tmp, '\n');
@@ -113,41 +113,43 @@ void request::get_body_info(void) {
 }
 
 void request::_ParseRequestHeaders(std::string& tmpBody) {
+    get_request(tmpBody); // get request infos
     if (_nbrFiles == 0) {
-        get_request(tmpBody); // get request infos
         position = tmpBody.find(_headers); // find headers and erase theme && position = request line length
         if (position != -1) {
-            headersSize = _headers.size() + position + _body_info_size + 5 + 1; // 5 for the size of boundary + content disposition + content-type + \n
+            headersSize = _headers.size() + position + _body_info_size + 5; // 5 for the size of boundary + content disposition + content-type + \n
             tmpBody.erase(0, headersSize);
             _finaleBoundary = _boundary;
             _finaleBoundary.insert((_finaleBoundary.size() - 1), "--");
             _headers.erase();
             position = -1;
+            _body_info_size = 0;
         }
     }
     else {
         position = tmpBody.find(_boundary);
         if (position != -1) {
-            // get_body_info();
-            headersSize = _body_info_size + 5 + 1;
+            headersSize = _body_info_size + 5;
             tmpBody.erase(0, headersSize);
+            _body_info_size = 0;
         }
     }
 }
 
 void    request::_parseNormalRequestBody(std::string &tmpBody, int boundaryPosition) {
-    tmpBody.erase(boundaryPosition, (_boundary.size() + 4));
-    _body.append(tmpBody);
+    position = tmpBody.find(_finaleBoundary);
+    if (position == boundaryPosition)
+        tmpBody.erase(boundaryPosition, (_boundary.size() + 4));
+    _body.append(tmpBody, 0, boundaryPosition);
     std::ofstream file(_filename);
     if (file.is_open()) {
         file << _body;
         file.close();
     }
     _body.erase();
-    _msgrequest.clear();
 }
 
-void    request::_parseChunkedRequestBody(std::string &tmpBody) {
+void    request::_parseChunkedRequestBody(std::string &tmpBody) {  
     _chunksVector = ft_split(tmpBody, "\r\n");
     for (size_t i = 0; i < _chunksVector.size(); i++) {
         if ((_chunksVector[i].size() > 0) && (_chunksVector[i].size() < 6)) {
@@ -161,7 +163,6 @@ void    request::_parseChunkedRequestBody(std::string &tmpBody) {
                 _chunkSizeVector.push_back(_chunksVector[i]);
         }
     }
-    std::cout << "size of vector sizes: " << _chunkSizeVector.size() << std::endl;
     for (size_t i = 0; i < (_chunkSizeVector.size() - 2); i++) { // _chunkSizeVector.size() - 2 because the last 2 elements are 3a => for the boundry size and 0 size of last chunk
         position = tmpBody.find(_chunkSizeVector[i]); // find size of the chunk in the body
         if (position != -1) {
@@ -176,8 +177,7 @@ void    request::_parseChunkedRequestBody(std::string &tmpBody) {
         file << _body;
         file.close();
     }
-    _body.erase();
-    _msgrequest.clear();
+    _body.clear();
     _chunksVector.clear();
     _chunkSizeVector.clear();
 }

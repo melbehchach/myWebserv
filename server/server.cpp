@@ -145,38 +145,52 @@ void server::_receive(int index) {
         _request._ParseRequestHeaders(_tmpBody);
         _path = _request._uri;
     }
-    bytesCounter += bytesRecv; //to accelerate the receive the data by not checking the body every time
+    bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
     if (_request._method == "POST") {
-        // IN CASE WE HAVE ANOTHER FILE
         position1 = _tmpBody.find(_request._boundary);
         if (position1 != -1) {
+            if(_request._chunkedTransfer)
+                _request._parseChunkedRequestBody(_tmpBody);
+            else
+                _request._parseNormalRequestBody(_tmpBody, position1);
+            _tmpBody.erase(0, position1);
             _request._nbrFiles = 1;
             _request._ParseRequestHeaders(_tmpBody);
-            _body.append(_tmpBody, (_tmpBody.size() - position1));
-            if (_request._chunkedTransfer)
-                _request._parseChunkedRequestBody(_body);
-            else
-                _request._parseNormalRequestBody(_body, position1);
-            _tmpBody.erase(0, (position1 + _request._boundary.size() + 2));
-            _body.clear();
         }
-
-
-
         // FINALE STAPE
         position2 = _tmpBody.find(_request._finaleBoundary); // find the last boundary
         if (position2  != -1) { // End of receiving
+            while ((position1 = _tmpBody.find(_request._boundary)) != -1) {
+                if(_request._chunkedTransfer)
+                    _request._parseChunkedRequestBody(_tmpBody);
+                else
+                    _request._parseNormalRequestBody(_tmpBody, position1);
+                _tmpBody.erase(0, position1);
+                _request._nbrFiles = 1;
+                _request._ParseRequestHeaders(_tmpBody);
+            }
+            // SEND THE LAST DATA 
             if (_request._chunkedTransfer)
                 _request._parseChunkedRequestBody(_tmpBody);
             else
                 _request._parseNormalRequestBody(_tmpBody, position2);
-            _tmpBody.erase(0, position2);
             bytesCounter = 0;
             _tmpBody.clear();
+            _request._msgrequest.clear();
             pfds[index].events = POLLOUT;
         }
     }
 }
+
+// void    server::_requestParsing(int position, std::string &_tmpBody) {
+//     if(_request._chunkedTransfer)
+//         _request._parseChunkedRequestBody(_tmpBody);
+//     else
+//         _request._parseNormalRequestBody(_tmpBody, position);
+//     _tmpBody.erase(0, position);
+//     _request._nbrFiles = 1;
+//     _request._ParseRequestHeaders(_tmpBody);
+// }
 
 server::~server() {}
 

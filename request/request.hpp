@@ -48,7 +48,6 @@ class request {
         int                                 _nbrFiles;
 
 
-
         void                                get_request(std::string& headres);
         void                                _ParseRequestHeaders(std::string& tmpBody);
         void                                _parseChunkedRequestBody(std::string &tmpBody);
