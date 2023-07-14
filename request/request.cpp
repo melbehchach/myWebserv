@@ -9,10 +9,8 @@ void request::get_request(std::string& headers) {
     if (_nbrFiles == 0){
         check_request_line();
         get_headers();
-        get_body_info();
     }
-    else 
-        get_body_info();
+    get_body_info();
     _message.str("");
     _message.clear();
     // std::cout << "[ REQUEST ]\n";
@@ -74,8 +72,10 @@ void request::get_headers(void) {
         _key = tmp.substr(0, (pos + 1));
         _value = tmp.substr((pos + 2), (size - pos));
         if (_key == "Content-Length:") {
-            std::istringstream iss(_value);
-            iss >> _content_length;
+            // std::istringstream iss(_value);
+            // iss >> _content_length;
+            // _content_length = _value;
+            // std::cout << _content_length << std::endl;
         }
         else if (_key == "Connection" )
             _connexion = _value;
@@ -109,6 +109,8 @@ void request::get_body_info(void) {
             pos = tmp.find(':');
             _content_type = tmp.substr((pos + 2), (size - pos));
         }
+        // if (_boundary.size() == 0) IN CASE OF REQUEST DON'T HAVE ANY BODY INFOS
+        //     break;
     }
 }
 
@@ -146,7 +148,7 @@ void    request::_parseNormalRequestBody(std::string &tmpBody, int boundaryPosit
         file << _body;
         file.close();
     }
-    _body.erase();
+    _body.clear();
 }
 
 void    request::_parseChunkedRequestBody(std::string &tmpBody) {  

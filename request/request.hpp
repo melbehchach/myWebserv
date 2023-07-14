@@ -38,7 +38,7 @@ class request {
         std::string                         _body;
         std::string                         _headers;
         std::string                         _chunks;
-        int                                 _content_length;
+        std::string                          _content_length;
         int                                 _status_code;
         int                                 _body_info_size;
         int                                 position;
@@ -46,6 +46,10 @@ class request {
         bool                                _chunkedTransfer;
         int                                 headersSize;
         int                                 _nbrFiles;
+
+
+        // POST REQUEST PARSER
+            
 
 
         void                                get_request(std::string& headres);

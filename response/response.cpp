@@ -5,7 +5,6 @@ response::response() {
 }
 
 std::string response::headers_generator(int coode) {
-
     _status_line.erase();
     get_error_message(coode);
     ss << coode;
@@ -16,7 +15,8 @@ std::string response::headers_generator(int coode) {
     _headers = _status_line;
     _headers += date();
     _headers += server_name();
-    _headers += content_type();
+    _headers += _content_type;
+    // _headers += _content_length();
     _headers += "\r\n";
     ss.str("");
     ss.clear();
@@ -61,8 +61,6 @@ std::string response::headers_generator(int coode) {
     // }
 // }
 
-
-
 void response::POST_response(void) {
 
 }
@@ -71,16 +69,17 @@ void response::DELETE_response(void) {
     
 }
 
-void response::content_length(void) {
-    // content_length = _request._content_length;
+void response::content_length(std::string &length) {
+    _content_length = "Content-length: ";
+    _content_length += length;
+    _content_length += "\r\n";
 }
 
-std::string response::content_type(void) {
-
-    _content_type = "content-type: ";
+void response::content_type(void) {
+    _content_type = "Content-type: ";
     _content_type += _type;
+    _content_type += "; charset=UTF-8";
     _content_type += "\r\n";
-    return (_content_type);
 }
 
 void response::connexion(void) {
@@ -88,7 +87,6 @@ void response::connexion(void) {
 }
 
 std::string response::server_name(void) {
-
     _server_name = "server: ";
     _server_name += "Aba7law's webserv v1.0";
     _server_name += "\r\n";
@@ -96,14 +94,11 @@ std::string response::server_name(void) {
 }
 
 std::string response::date(void) {
-
     // Get the current system time
     std::time_t currentTime = std::time(NULL);
-
     // Convert the time_t object to a string
     char timeString[100];
     std::strftime(timeString, sizeof(timeString), "%a, %d %b %Y %H:%M:%S %Z", std::localtime(&currentTime));
-
     _date = "Date: ";
     _date += timeString;
     _date += " GMT";
@@ -329,6 +324,7 @@ void response::get_content_type(const std::string& file)
             _type = "application/vnd.mozilla.xul+xml";
         }
     }
+    content_type();
 }
 
 

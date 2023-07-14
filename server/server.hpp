@@ -34,6 +34,7 @@ class server {
         std::string                 _headers;
         std::string                 _tmpBody;
         std::string                 _chunks;
+        std::string                 _content_lenght;
         char                        buffer[16000];
         int                         socketFd;
         int                         bytesSend;
@@ -54,6 +55,7 @@ class server {
         int                         _poll(void);
         void                        _receive(int index);
         void                        _add_descriptor(int fd);
+        void                        _post_method(std::string &data);
 
     
         // int     get_file_size(void);

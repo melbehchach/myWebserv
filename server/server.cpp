@@ -33,6 +33,8 @@ server::server() {
                     _receive(i); // check the receiving of data
             }
             else if (pfds[i].events & POLLOUT) {
+                _response.content_length(_content_lenght);
+                _response.get_content_type(_request._filename);
                 _body = _response.headers_generator(_request._status_code);
                 bytesSend = send(pfds[i].fd, _body.c_str(), _body.size(), 0);
                 if (bytesSend < 0) {
@@ -141,46 +143,60 @@ void server::_receive(int index) {
         exit(0) ;
     }
     _tmpBody.append(buffer, bytesRecv);
+    // std::cout << _tmpBody << std::endl;
     if (bytesCounter == 0) { // stor headers in a multi-map and erase them from the body
         _request._ParseRequestHeaders(_tmpBody);
         _path = _request._uri;
     }
-    bytesCounter += bytesRecv; // to accelerate the receive the data by not checking the body every time
+    bytesCounter += bytesRecv; // to know size of data receveid 
     if (_request._method == "POST") {
-        position1 = _tmpBody.find(_request._boundary);
-        if (position1 != -1) {
-            if(_request._chunkedTransfer)
-                _request._parseChunkedRequestBody(_tmpBody);
-            else
-                _request._parseNormalRequestBody(_tmpBody, position1);
-            _tmpBody.erase(0, position1);
-            _request._nbrFiles = 1;
-            _request._ParseRequestHeaders(_tmpBody);
-        }
-        // FINALE STAPE
-        position2 = _tmpBody.find(_request._finaleBoundary); // find the last boundary
-        if (position2  != -1) { // End of receiving
-            while ((position1 = _tmpBody.find(_request._boundary)) != -1) {
-                if(_request._chunkedTransfer)
-                    _request._parseChunkedRequestBody(_tmpBody);
-                else
-                    _request._parseNormalRequestBody(_tmpBody, position1);
-                _tmpBody.erase(0, position1);
-                _request._nbrFiles = 1;
-                _request._ParseRequestHeaders(_tmpBody);
-            }
-            // SEND THE LAST DATA 
-            if (_request._chunkedTransfer)
-                _request._parseChunkedRequestBody(_tmpBody);
-            else
-                _request._parseNormalRequestBody(_tmpBody, position2);
-            bytesCounter = 0;
-            _tmpBody.clear();
-            _request._msgrequest.clear();
+        _post_method(_tmpBody);
+        if (bytesCounter == 0)
             pfds[index].events = POLLOUT;
-        }
+    }
+    else if (_request._method == "GET") {
+        pfds[index].events = POLLOUT;    // cannot accepte any body
+    }
+    else if (_request._method == "DELETE") {
+        pfds[index].events = POLLOUT;   // cannot accepte any body
     }
 }
+
+
+void    server::_post_method(std::string &data) {
+    position1 = data.find(_request._boundary);
+    if (position1 != -1) {
+        if(_request._chunkedTransfer)
+            _request._parseChunkedRequestBody(data);
+        else
+            _request._parseNormalRequestBody(data, position1);
+        data.erase(0, position1);
+        _request._nbrFiles = 1;
+        _request._ParseRequestHeaders(data);
+    }
+    // FINALE STAPE
+    position2 = data.find(_request._finaleBoundary); // find the last boundary
+    if (position2  != -1) { // End of receiving
+        while ((position1 = data.find(_request._boundary)) != -1) {
+            if(_request._chunkedTransfer)
+                _request._parseChunkedRequestBody(data);
+            else
+                _request._parseNormalRequestBody(data, position1);
+            data.erase(0, position1);
+            _request._nbrFiles = 1;
+            _request._ParseRequestHeaders(data);
+        }
+        // SEND THE LAST DATA 
+        if (_request._chunkedTransfer)
+            _request._parseChunkedRequestBody(data);
+        else
+            _request._parseNormalRequestBody(data, position2);
+        bytesCounter = 0;
+        data.clear();
+        _request._msgrequest.clear();
+    }
+}
+
 
 // void    server::_requestParsing(int position, std::string &_tmpBody) {
 //     if(_request._chunkedTransfer)

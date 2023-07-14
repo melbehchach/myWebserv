@@ -12,6 +12,7 @@ class response {
         std::string         _headers;
         std::string         _message;
         std::string         _content_type;
+        std::string         _content_length;
         std::string         _type;
         std::string         _date;
         std::string         _server_name;
@@ -32,8 +33,8 @@ class response {
         // void GET_response(std::vector<struct pollfd>& fds, int index, std::string& body, const std::string& path, int code);
         void POST_response(void);
         void DELETE_response(void);
-        void content_length(void);
-        std::string content_type(void);
+        void content_length(std::string &length);
+        void content_type(void);
         void connexion(void);
         std::string server_name(void);
         std::string date(void);
