@@ -1,24 +1,31 @@
 #include "request.hpp"
 
-request::request() {
-    _nbrFiles = 0;
-}
-
-void request::get_request(std::string& headers) {
-    _message << headers;
-    if (_nbrFiles == 0){
-        check_request_line();
-        get_headers();
-    }
-    get_body_info();
-    _message.str("");
-    _message.clear();
     // std::cout << "[ REQUEST ]\n";
     // for (_it = _msgrequest.begin(); _it != _msgrequest.end(); _it++)
     //     std::cout << (*_it).first << (*_it).second << '\n';
+
+
+request::request() {
+    _multipleFiles = false;
+    _chunkedTransfer = false;
 }
 
-bool request::check_request_line(void) { // reading the request line to get infos about http method uri and http version
+void request::requestHeader(std::string& buffer) {
+    _message << buffer;
+    getRequestLine();
+    getHeaders();
+    position = buffer.find(_headers);
+    if (_method == "POST" && position != -1) {
+        headersSize = _headers.size() + position;
+        _content_length = headersSize;
+        buffer.erase(0, headersSize);
+        _headers.erase();
+    }
+    _message.str("");
+    _message.clear();
+}
+
+bool request::getRequestLine(void) { // reading the request line to get infos about http method uri and http version
     std::string tmp;
     int         pos;
 
@@ -54,7 +61,7 @@ bool request::check_request_line(void) { // reading the request line to get info
     return (true);
 }
 
-void request::get_headers(void) {
+void request::getHeaders(void) {
     std::string tmp;
     int         size;
     int         pos;
@@ -70,31 +77,26 @@ void request::get_headers(void) {
         if (pos == -1) // in case of header contains an empty line
             continue;
         _key = tmp.substr(0, (pos + 1));
-        _value = tmp.substr((pos + 2), (size - pos));
-        if (_key == "Content-Length:") {
-            // std::istringstream iss(_value);
-            // iss >> _content_length;
-            // _content_length = _value;
-            // std::cout << _content_length << std::endl;
-        }
-        else if (_key == "Connection" )
+        _value = tmp.substr((pos + 2), (size - pos)); 
+        if (_key == "Connection")
             _connexion = _value;
+        else if (_key == "Transfer-Encoding:")
+            _chunkedTransfer = true;
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value));
     }
 }
 
-void request::get_body_info(void) {
+
+/*         POST METHOD PARSING REQUEST         */
+
+void request::postBodyInfos(std::string &infos) {
     std::string tmp;
     int         size;
     int         pos;
     
-    _it = _msgrequest.find("Transfer-Encoding:");
-    if (_it != _msgrequest.end()) {
-        _chunkedTransfer = true;
-        std::getline(_message, tmp, '\n');
-    }
-    else 
-        _chunkedTransfer = false;
+    _message << infos;
+    if (_chunkedTransfer)
+        std::getline(_message, tmp, '\n'); // skip the line containing the size of chunk
     for (int i = 0; i < 3; i++) {
         std::getline(_message, tmp, '\n');
         size = tmp.size();
@@ -112,37 +114,68 @@ void request::get_body_info(void) {
         // if (_boundary.size() == 0) IN CASE OF REQUEST DON'T HAVE ANY BODY INFOS
         //     break;
     }
+    _message.str("");
+    _message.clear();
 }
 
-void request::_ParseRequestHeaders(std::string& tmpBody) {
-    get_request(tmpBody); // get request infos
-    if (_nbrFiles == 0) {
-        position = tmpBody.find(_headers); // find headers and erase theme && position = request line length
-        if (position != -1) {
-            headersSize = _headers.size() + position + _body_info_size + 5; // 5 for the size of boundary + content disposition + content-type + \n
-            tmpBody.erase(0, headersSize);
-            _finaleBoundary = _boundary;
-            _finaleBoundary.insert((_finaleBoundary.size() - 1), "--");
-            _headers.erase();
-            position = -1;
-            _body_info_size = 0;
-        }
+void request::erasePostRequestHeaders(std::string& buffer) {
+    postBodyInfos(buffer);
+    if (!_multipleFiles) {
+        headersSize = _body_info_size + 5; // 5 for the size of boundary + content disposition + content-type + \n
+        buffer.erase(0, headersSize);
+        _finaleBoundary = _boundary;
+        _finaleBoundary.insert((_finaleBoundary.size() - 1), "--");
+        position = -1;
     }
     else {
-        position = tmpBody.find(_boundary);
+        position = buffer.find(_boundary);
         if (position != -1) {
             headersSize = _body_info_size + 5;
-            tmpBody.erase(0, headersSize);
-            _body_info_size = 0;
+            buffer.erase(0, headersSize);
         }
+    }
+    _body_info_size = 0;
+}
+
+void    request::postMethod(std::string &data) {
+    position1 = data.find(_boundary);
+    if (position1 != -1) { // in case i find another boundary "body infos" means another body exists
+        if(_chunkedTransfer)
+            chunkedPostRequestBody(data);
+        else
+            normalPostRequestBody(data, position1);
+        data.erase(0, position1);
+        _multipleFiles = true;
+        erasePostRequestHeaders(data);
+    }
+    // FINALE STAPE
+    position2 = data.find(_finaleBoundary); // find the last boundary
+    if (position2  != -1) { // End of receiving
+        while ((position1 = data.find(_boundary)) != -1) {
+            if(_chunkedTransfer)
+                chunkedPostRequestBody(data);
+            else
+                normalPostRequestBody(data, position1);
+            data.erase(0, position1);
+            _multipleFiles = true;
+            erasePostRequestHeaders(data);
+        }
+        // SEND THE LAST DATA
+        position2 = data.find(_finaleBoundary); // update the postion in case we had lots of files
+        if (_chunkedTransfer)
+            chunkedPostRequestBody(data);
+        else 
+            normalPostRequestBody(data, position2);
+        data.clear();
+        _msgrequest.clear();
     }
 }
 
-void    request::_parseNormalRequestBody(std::string &tmpBody, int boundaryPosition) {
-    position = tmpBody.find(_finaleBoundary);
+void    request::normalPostRequestBody(std::string &buffer, int boundaryPosition) {
+    position = buffer.find(_finaleBoundary);
     if (position == boundaryPosition)
-        tmpBody.erase(boundaryPosition, (_boundary.size() + 4));
-    _body.append(tmpBody, 0, boundaryPosition);
+        buffer.erase(boundaryPosition, (_boundary.size() + 4));
+    _body.append(buffer, 0, boundaryPosition);
     std::ofstream file(_filename);
     if (file.is_open()) {
         file << _body;
@@ -151,8 +184,8 @@ void    request::_parseNormalRequestBody(std::string &tmpBody, int boundaryPosit
     _body.clear();
 }
 
-void    request::_parseChunkedRequestBody(std::string &tmpBody) {  
-    _chunksVector = ft_split(tmpBody, "\r\n");
+void    request::chunkedPostRequestBody(std::string &buffer) {  
+    _chunksVector = ft_split(buffer, "\r\n");
     for (size_t i = 0; i < _chunksVector.size(); i++) {
         if ((_chunksVector[i].size() > 0) && (_chunksVector[i].size() < 6)) {
             try {
@@ -166,12 +199,12 @@ void    request::_parseChunkedRequestBody(std::string &tmpBody) {
         }
     }
     for (size_t i = 0; i < (_chunkSizeVector.size() - 2); i++) { // _chunkSizeVector.size() - 2 because the last 2 elements are 3a => for the boundry size and 0 size of last chunk
-        position = tmpBody.find(_chunkSizeVector[i]); // find size of the chunk in the body
+        position = buffer.find(_chunkSizeVector[i]); // find size of the chunk in the body
         if (position != -1) {
             _chunkSize = std::stoul(_chunkSizeVector[i], nullptr, 16);
-            _chunks = tmpBody.substr((position + _chunkSizeVector[i].size() + 2), _chunkSize);
+            _chunks = buffer.substr((position + _chunkSizeVector[i].size() + 2), _chunkSize);
             _body.append(_chunks);
-            tmpBody.erase(position, (_chunkSizeVector[i].size() + 2));
+            buffer.erase(position, (_chunkSizeVector[i].size() + 2));
         }
     }
     std::ofstream file(_filename);
@@ -183,6 +216,7 @@ void    request::_parseChunkedRequestBody(std::string &tmpBody) {
     _chunksVector.clear();
     _chunkSizeVector.clear();
 }
+
 
 std::vector<std::string> request::ft_split(const std::string &str, const std::string &del) {
 	std::vector<std::string> res;
@@ -198,5 +232,11 @@ std::vector<std::string> request::ft_split(const std::string &str, const std::st
 		res.push_back(str.substr(prev));
 	return res;
 }
+
+/*         GET METHOD PARSING REQUEST         */
+
+
+
+
 
 request::~request() {}

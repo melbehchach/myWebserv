@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -std=c++98 -Wall -Werror -Wextra
+CFLAGS = -std=c++98 -Wall -Werror -Wextra -g -fsanitize=address,undefined,integer
 NAME = webserv
 HEADER = header.hpp 
 SRC = ./main.cpp \
@@ -26,4 +26,4 @@ fclean: clean
 re : fclean all
 
 
-#    -g -fsanitize=address,undefined,integer
+#    

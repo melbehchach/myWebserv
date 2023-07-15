@@ -17,17 +17,15 @@ class request {
         std::string                         _key;
         std::string                         _value;
 
-        bool check_request_line(void);
-        void get_headers(void);
-        void get_body_info(void);
+        bool getRequestLine(void); // get the request line
+        void getHeaders(void); // get headers and store theme in multimap
+        void postBodyInfos(std::string &infos); // in case of a post method must have body infos
 
     public:
-        request();
         std::multimap<std::string, std::string>             _msgrequest;
         std::multimap<std::string, std::string>::iterator   _it;
-        std::vector<std::string>            _chunksVector;
-        std::vector<std::string>            _chunkSizeVector;
-        // std::ofstream                       file;
+        std::vector<std::string>                            _chunksVector;
+        std::vector<std::string>                            _chunkSizeVector;
         std::string                         _method;
         std::string                         _uri;
         std::string                         _boundary;
@@ -38,25 +36,31 @@ class request {
         std::string                         _body;
         std::string                         _headers;
         std::string                         _chunks;
-        std::string                          _content_length;
+        int                                 _content_length;
         int                                 _status_code;
         int                                 _body_info_size;
-        int                                 position;
         int                                 _chunkSize;
         bool                                _chunkedTransfer;
         int                                 headersSize;
-        int                                 _nbrFiles;
+        bool                                _multipleFiles;
+        int                                 position;
+        int                                 position1;
+        int                                 position2;
 
+        request();
+        void                                requestHeader(std::string& buffer);
 
-        // POST REQUEST PARSER
-            
-
-
-        void                                get_request(std::string& headres);
-        void                                _ParseRequestHeaders(std::string& tmpBody);
-        void                                _parseChunkedRequestBody(std::string &tmpBody);
-        void                                _parseNormalRequestBody(std::string &tmpBody, int boundaryPosition);
+        // POST REQUEST METHODS
+        void                                postMethod(std::string &data);
+        void                                erasePostRequestHeaders(std::string& buffer);
+        void                                normalPostRequestBody(std::string &buffer, int boundaryPosition);
+        void                                chunkedPostRequestBody(std::string &buffer);
         std::vector<std::string>            ft_split(const std::string &str, const std::string &del);
+            
+        // GET REQUEST METHODS
+
+
+
 
         ~request();
 

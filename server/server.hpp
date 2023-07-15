@@ -41,8 +41,9 @@ class server {
         int                         clinetFd;
         int                         bytesRecv;
         int                         bytesCounter;
-        int                         position1;
-        int                         position2;
+        // int                         position1;
+        // int                         position2;
+        int                         pos_read;
 
 
     // SERVER METHODS
@@ -55,11 +56,11 @@ class server {
         int                         _poll(void);
         void                        _receive(int index);
         void                        _add_descriptor(int fd);
-        void                        _post_method(std::string &data);
+        std::string	                readFile(void);
+        // void                        _post_method(std::string &data);
 
     
-        // int     get_file_size(void);
-        // std::string	readFile(void);
+        int     get_file_size(void);
 
     public:
         server();

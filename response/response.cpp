@@ -1,27 +1,9 @@
 #include "response.hpp"
 
 response::response() {
-    
+    _body = "";
 }
 
-std::string response::headers_generator(int coode) {
-    _status_line.erase();
-    get_error_message(coode);
-    ss << coode;
-    _httpv = "HTTP/1.1 ";
-    _status_line.append(_httpv);
-    _status_line.append(ss.str());
-    _status_line.append(_message);
-    _headers = _status_line;
-    _headers += date();
-    _headers += server_name();
-    _headers += _content_type;
-    // _headers += _content_length();
-    _headers += "\r\n";
-    ss.str("");
-    ss.clear();
-    return (_headers);
-}
 
 
 // std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING
@@ -61,18 +43,77 @@ std::string response::headers_generator(int coode) {
     // }
 // }
 
-void response::POST_response(void) {
+std::string response::getHeaders(int code) {
+    _status_line.erase();
+    errorMessage(code);
+    ss << code;
+    _httpv = "HTTP/1.1 ";
+    _status_line.append(_httpv);
+    _status_line.append(ss.str());
+    _status_line.append(_message);
+    _headers = _status_line;
+    _headers += date();
+    _headers += server_name();
+    _headers += _content_type;
+    _headers += _content_length;
+    _headers += "\r\n";
+    ss.str("");
+    ss.clear();
+    _headers.clear();
+    return (_headers);
+}
 
+// std::string response::getMethod(int code) {
+    // if (_body.size() == 0) { // need to handl the prblem of the clients vector
+        // content_length(get_file_size());
+        // _body = getHeaders(code);
+    // }
+    // if (_body.size() > 0) {
+    //     bytToSend = _body.size() / 10;
+    //     if (_body.size() < BUFFSIZE)
+    //         bytToSend = _body.size();
+    //     retsend = send(fds[index].fd, _body.c_str(), bytToSend, 0);
+    //     if (retsend < 0)
+    //         std::cout << strerror(errno) << '\n';
+    //     _body.erase(0, retsend);
+    // }
+    // else {
+    //     if (connexion == "keep-alive") {
+            
+    //     }
+    //     close(fds[index].fd);
+    //     fds.erase(fds.begin() + index);
+    //     _body.erase();
+    // }
+//     return (_body);
+// }
+
+std::string response::postMethod(int code) {
+    _status_line.erase();
+    errorMessage(code);
+    ss << code;
+    _httpv = "HTTP/1.1 ";
+    _status_line.append(_httpv);
+    _status_line.append(ss.str());
+    _status_line.append(_message);
+    _headers = _status_line;
+    _headers += date();
+    _headers += server_name();
+    _headers += "\r\n";
+    ss.str("");
+    ss.clear();
+    return (_headers);
 }
 
 void response::DELETE_response(void) {
     
 }
 
-void response::content_length(std::string &length) {
+std::string response::content_length(int size) {
     _content_length = "Content-length: ";
-    _content_length += length;
+    _content_length += std::to_string(size);
     _content_length += "\r\n";
+    return (_content_length);
 }
 
 void response::content_type(void) {
@@ -112,8 +153,31 @@ std::string response::date(void) {
 // }
 
 
+std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING
+	std::ifstream 	file;
+	std::string     text;
+	std::ostringstream streambuff;
+	file.open(_path);
+	if (file.is_open()) {
+		streambuff << file.rdbuf();
+		text = streambuff.str();
+	}
+	file.close();
+	return text;
+}
 
-void response::get_error_message(int code) {
+int response::get_file_size(void) {
+    std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
+    if (!_file.is_open())
+        std::cout << "error kabiiiiiir \n";
+    std::streampos _fileSize = _file.tellg();
+    int contentLength = static_cast<int>(_fileSize);
+    _file.close();
+    return (contentLength);
+}
+
+
+void response::errorMessage(int code) {
     if (code == 200)
         _message = " ok\r\n";
     else if (code == 400) 
@@ -198,7 +262,7 @@ void response::get_error_message(int code) {
     }
 }
 
-void response::get_content_type(const std::string& file)
+void response::contentType(const std::string& file)
 {
     if (file.rfind('.') != std::string::npos) {
         std::string ext =
