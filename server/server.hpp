@@ -26,25 +26,15 @@ class server {
         socklen_t                   clientaddrln;
         request                     _request;
         response                    _response;
-        std::vector<std::string>    _chunksVector;
-        std::vector<std::string>    _chunkSizeVector;
-        std::ofstream               file;
-        std::string                 _body;
         std::string                 _path;
-        std::string                 _headers;
         std::string                 _tmpBody;
-        std::string                 _chunks;
-        std::string                 _content_lenght;
+        bool                        _startrecv;
         char                        buffer[16000];
         int                         socketFd;
-        int                         bytesSend;
         int                         clinetFd;
         int                         bytesRecv;
-        int                         bytesCounter;
-        // int                         position1;
-        // int                         position2;
-        int                         pos_read;
-
+        int                         totalFds;
+        int                         totalFdsCheck;
 
     // SERVER METHODS
         bool                        _getaddrinfo(void);
@@ -54,13 +44,9 @@ class server {
         bool                        _listen(void);
         int                         _accept(void);
         int                         _poll(void);
-        void                        _receive(int index);
         void                        _add_descriptor(int fd);
-        std::string	                readFile(void);
-        // void                        _post_method(std::string &data);
-
-    
-        int     get_file_size(void);
+        void                        _receive(int index);
+        void                        _send(int index);
 
     public:
         server();

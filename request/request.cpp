@@ -1,16 +1,12 @@
 #include "request.hpp"
 
-    // std::cout << "[ REQUEST ]\n";
-    // for (_it = _msgrequest.begin(); _it != _msgrequest.end(); _it++)
-    //     std::cout << (*_it).first << (*_it).second << '\n';
-
-
 request::request() {
     _multipleFiles = false;
     _chunkedTransfer = false;
 }
 
 void request::requestHeader(std::string& buffer) {
+    // std::cout << "hello debugger" << std::endl;
     _message << buffer;
     getRequestLine();
     getHeaders();
@@ -21,6 +17,9 @@ void request::requestHeader(std::string& buffer) {
         buffer.erase(0, headersSize);
         _headers.erase();
     }
+    // std::cout << "[ REQUEST ]\n";
+    // for (_it = _msgrequest.begin(); _it != _msgrequest.end(); _it++)
+    //     std::cout << (*_it).first << (*_it).second << '\n';
     _message.str("");
     _message.clear();
 }
@@ -78,7 +77,7 @@ void request::getHeaders(void) {
             continue;
         _key = tmp.substr(0, (pos + 1));
         _value = tmp.substr((pos + 2), (size - pos)); 
-        if (_key == "Connection")
+        if (_key == "Connection:")
             _connexion = _value;
         else if (_key == "Transfer-Encoding:")
             _chunkedTransfer = true;
@@ -207,6 +206,7 @@ void    request::chunkedPostRequestBody(std::string &buffer) {
             buffer.erase(position, (_chunkSizeVector[i].size() + 2));
         }
     }
+    // std::cout << _body;
     std::ofstream file(_filename);
     if (file.is_open()) {
         file << _body;

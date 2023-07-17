@@ -46,6 +46,7 @@ class request {
         int                                 position;
         int                                 position1;
         int                                 position2;
+        
 
         request();
         void                                requestHeader(std::string& buffer);
