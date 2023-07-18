@@ -55,12 +55,20 @@ std::string response::contentTypeHeader(void) {
     return (_content_type);
 }
 
+
+
+
+
+
+
+
+
                 /*                      POST METHOD RESPONSE                      */
 void response::postMethodResponse(int fd) {
     int counter = 0;
 
     _headers = statusLine();
-    // _headers += connexionHeader();
+    _headers += connexionHeader();
     _headers += serverNameHeader();
     _headers += dateHeader();
     _headers += contentLengthHeader(0);
@@ -68,8 +76,19 @@ void response::postMethodResponse(int fd) {
     counter = send(fd, _headers.c_str(), _headers.size(), 0);
     if (counter < 0)
         std::cout << strerror(errno) << '\n';
-    close(fd); // MUST CHECK THE CONNEXION
 }
+
+
+
+
+
+
+
+
+
+
+
+
 
                 /*                      GET METHOD RESPONSE                      */
 std::string response::getHeaders(int size) {
@@ -84,9 +103,9 @@ std::string response::getHeaders(int size) {
     return (_headers);
 }
 
-int response::getMethodResponse(int fd) {
+bool response::getMethodResponse(int fd) {
+    endSend = false;
     if (startSend) {
-        std::cout << "hello" << std::endl;
         _body = getHeaders(get_file_size());
         _body += readFile();
         startSend = false;
@@ -99,9 +118,9 @@ int response::getMethodResponse(int fd) {
         if (bytesSend < 0)
             std::cout << strerror(errno) << '\n';
         _body.erase(0, bytesCounter);
-        bytesSend = _body.size();
+        endSend = true;
     }
-    return (bytesSend);
+    return (endSend);
 }
 
 std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING

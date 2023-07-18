@@ -29,6 +29,7 @@ class response {
         response();
         std::string         _path;
         bool                startSend;
+        bool                endSend;
         int code;
         
         void errorMessage(int code);
@@ -41,7 +42,7 @@ class response {
         std::string dateHeader(void);
         std::string getHeaders(int size);
         void postMethodResponse(int fd);
-        int getMethodResponse(int fd);
+        bool getMethodResponse(int fd);
 
 
 

@@ -5,8 +5,7 @@ request::request() {
     _chunkedTransfer = false;
 }
 
-void request::requestHeader(std::string& buffer) {
-    // std::cout << "hello debugger" << std::endl;
+void request::requestHeader(std::string& buffer) { // SAME FUNCTION FOR POST GET AND DELETE
     _message << buffer;
     getRequestLine();
     getHeaders();
@@ -17,9 +16,6 @@ void request::requestHeader(std::string& buffer) {
         buffer.erase(0, headersSize);
         _headers.erase();
     }
-    // std::cout << "[ REQUEST ]\n";
-    // for (_it = _msgrequest.begin(); _it != _msgrequest.end(); _it++)
-    //     std::cout << (*_it).first << (*_it).second << '\n';
     _message.str("");
     _message.clear();
 }
@@ -50,6 +46,7 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
         return (false);
     }
     if (access(_uri.c_str(), F_OK | R_OK) != 0) {
+        std::cout << "checked" << std::endl;
         _status_code = 403;
         return (false);
     }
@@ -84,6 +81,7 @@ void request::getHeaders(void) {
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value));
     }
 }
+
 
 
 /*         POST METHOD PARSING REQUEST         */
@@ -206,7 +204,6 @@ void    request::chunkedPostRequestBody(std::string &buffer) {
             buffer.erase(position, (_chunkSizeVector[i].size() + 2));
         }
     }
-    // std::cout << _body;
     std::ofstream file(_filename);
     if (file.is_open()) {
         file << _body;
