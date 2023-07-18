@@ -1,8 +1,7 @@
 #include "response.hpp"
 
 response::response() {
-    startSend = true;
-    
+
 }
 
 std::string response::statusLine(void) {
@@ -61,7 +60,7 @@ void response::postMethodResponse(int fd) {
     int counter = 0;
 
     _headers = statusLine();
-    _headers += connexionHeader();
+    // _headers += connexionHeader();
     _headers += serverNameHeader();
     _headers += dateHeader();
     _headers += contentLengthHeader(0);
@@ -87,6 +86,7 @@ std::string response::getHeaders(int size) {
 
 int response::getMethodResponse(int fd) {
     if (startSend) {
+        std::cout << "hello" << std::endl;
         _body = getHeaders(get_file_size());
         _body += readFile();
         startSend = false;

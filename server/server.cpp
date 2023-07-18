@@ -14,6 +14,7 @@ server::server() {
         exit(1);
     _add_descriptor(socketFd);
     while (1) {
+        std::cout << "start polling... " << std::endl;
         totalFdsCheck = _poll();
         if (totalFdsCheck < 0)
             break ; // poll call fialed
@@ -22,11 +23,17 @@ server::server() {
             _accept();   // Listening descriptor is readable. 
             _startrecv = true;
         }
+        std::cout << "after the poll" << std::endl;
         for (size_t i = 1; i < pfds.size(); i++) {
-            if (pfds[i].revents & POLLIN)
+            // std::cout << "new entry to the loop && index: " << i << std::endl;
+            if (pfds[i].revents & POLLIN) {
+                std::cout << "receive... " << std::endl;
                 _receive(i); // check the receiving of data
-            else if (pfds[i].revents & POLLOUT)
+            }
+            else if (pfds[i].revents & POLLOUT) {
+                std::cout << "send... " << std::endl;
                 _send(i);
+            }
         }
     }
 }
@@ -50,8 +57,8 @@ int server::_socket(void) {
         std::cout << strerror(errno);
         exit (1);
     }
-    // if ((fcntl(socketFd, F_SETFL, O_NONBLOCK) < 0)) //  to check the non blocking after tests
-    //     std::cout << strerror(errno);
+    if ((fcntl(socketFd, F_SETFL, O_NONBLOCK) < 0)) //  to check the non blocking after tests
+        std::cout << strerror(errno);
     return (socketFd);
 }
 
@@ -81,7 +88,7 @@ bool server::_listen(void) {
 }
 
 int server::_poll(void) {
-    totalFds = poll(pfds.data(), pfds.size(), -1);
+    totalFds = poll(&pfds[0], pfds.size(), -1);
     if (totalFds < 0) {
         std::cout << strerror(errno);
     }
@@ -107,10 +114,8 @@ void server::_add_descriptor(int fd) {
     pollfds.fd = fd;
     if (fd == socketFd)
         pollfds.events = POLLIN;
-    else {
+    else
         pollfds.events = POLLIN | POLLOUT;
-        pollfds.revents = 0;
-    }
     pfds.push_back(pollfds);
 }
 
@@ -123,8 +128,12 @@ void server::_receive(int index) {
         pfds.erase(pfds.begin() + index);
         exit(0);
     }
-    if (pfds[index].revents & POLLOUT)
+    if (pfds[index].revents & POLLHUP) {
         std::cout << "ya lghder bda" << std::endl;
+        close(pfds[index].fd);
+        pfds.erase(pfds.begin() + index);
+        return;
+    }
     _tmpBody.append(buffer, bytesRecv);
     if (_startrecv) { // stor headers in a multi-map and erase them from the body
         _request.requestHeader(_tmpBody);
@@ -133,8 +142,11 @@ void server::_receive(int index) {
         _path = _request._uri;
         _startrecv = false;
     }
-    if (_request._method == "POST") {
+    if (_request._method == "POST")
         _request.postMethod(_tmpBody);
+    else if (_request._method == "GET") {
+        _tmpBody.clear();
+        _response.startSend = true;
     }
 }
 
@@ -143,20 +155,22 @@ void server::_send(int index) {
     _response.code = _request._status_code;
     if (_request._method == "POST") {
         _response.postMethodResponse(pfds[index].fd);
-        pfds.erase(pfds.begin() + index);
+        if (_request._connexion != "keep-alive\r") {
+            close(pfds[index].fd);
+            pfds.erase(pfds.begin() + index);
+        }
     }
     else if (_request._method == "GET") {
         _response._path = _path;
         ret = _response.getMethodResponse(pfds[index].fd);
+        _response.startSend = false;
         if (ret == 0) {
             if (_request._connexion != "keep-alive\r") {
                 close(pfds[index].fd);
                 pfds.erase(pfds.begin() + index);
             }
-            pfds[index].revents = POLLIN;
         }
     }
-    _tmpBody.clear();
 }
 
 server::~server() {}
