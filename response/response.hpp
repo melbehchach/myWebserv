@@ -10,26 +10,27 @@ class response {
     private:
                     /*  METHPDS */
 
-        std::string         _status_line;
+        std::string         _statusLine;
         std::string         _headers;
         std::string         _message;
-        std::string         _content_type;
-        std::string         _content_length;
+        std::string         _contentType;
+        std::string         _contentLength;
         std::string         _connexion;
         std::string         _type;
         std::string         _date;
-        std::string         _server_name;
+        std::string         _serverName;
         std::string         _body;
-        int                 bytesCounter;
-        int                 bytesSend;
+        std::string         _tmpBody;
+        int                 _bytesCounter;
+        int                 _bytesSend;
 
                     /*  ATTRIBUTS   */
 
     public:
         response();
         std::string         _path;
-        bool                startSend;
-        bool                endSend;
+        bool                _startSend;
+        bool                _endSend;
         int code;
         
         void errorMessage(int code);

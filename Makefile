@@ -5,7 +5,8 @@ HEADER = header.hpp
 SRC = ./main.cpp \
 	./server/server.cpp \
 	./request/request.cpp \
-	./response/response.cpp
+	./response/response.cpp \
+	./client/client.cpp
 
 OBJ = $(SRC:.cpp=.o)
 

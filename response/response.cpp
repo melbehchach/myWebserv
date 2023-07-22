@@ -6,19 +6,20 @@ response::response() {
 
 std::string response::statusLine(void) {
     errorMessage(code);
-    _status_line = "HTTP/1.1 ";
-    _status_line += std::to_string(code);
-    _status_line += _message;
-    return (_status_line);
+    _statusLine = "HTTP/1.1 ";
+    _statusLine += std::to_string(code);
+    _statusLine += _message;
+    return (_statusLine);
 }
 
 std::string response::contentLengthHeader(int size) {
-    _content_length = "Content-length: ";
-    _content_length += std::to_string(size);
-    _content_length += "\r\n";
-    return (_content_length);
+    _contentLength = "Content-length: ";
+    if (code == 404)
+        size = 0;
+    _contentLength += std::to_string(size);
+    _contentLength += "\r\n";
+    return (_contentLength);
 }
-
 
 std::string response::connexionHeader(void) {
     _connexion = "Connexion: ";
@@ -28,10 +29,10 @@ std::string response::connexionHeader(void) {
 }
 
 std::string response::serverNameHeader(void) {
-    _server_name = "server: ";
-    _server_name += "Aba7law's webserv v1.0";
-    _server_name += "\r\n";
-    return (_server_name);
+    _serverName = "server: ";
+    _serverName += "Aba7law's webserv v1.0";
+    _serverName += "\r\n";
+    return (_serverName);
 }
 
 std::string response::dateHeader(void) {
@@ -48,20 +49,11 @@ std::string response::dateHeader(void) {
 }
 
 std::string response::contentTypeHeader(void) {
-    _content_type = "Content-type: ";
-    _content_type += _type;
-    _content_type += "; charset=UTF-8";
-    _content_type += "\r\n";
-    return (_content_type);
+    _contentType = "Content-type: ";
+    _contentType += _type;
+    _contentType += "\r\n";
+    return (_contentType);
 }
-
-
-
-
-
-
-
-
 
                 /*                      POST METHOD RESPONSE                      */
 void response::postMethodResponse(int fd) {
@@ -78,18 +70,6 @@ void response::postMethodResponse(int fd) {
         std::cout << strerror(errno) << '\n';
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
                 /*                      GET METHOD RESPONSE                      */
 std::string response::getHeaders(int size) {
     contentType(_path);
@@ -104,23 +84,29 @@ std::string response::getHeaders(int size) {
 }
 
 bool response::getMethodResponse(int fd) {
-    endSend = false;
-    if (startSend) {
+    _endSend = false;
+    if (_startSend) {
         _body = getHeaders(get_file_size());
+        std::cout << _body << std::endl;
         _body += readFile();
-        startSend = false;
+        _startSend = false;
     }
-    if (_body.size() > 0) {
-        bytesCounter = _body.size() / 10;
+    std::cout << "send response: " << fd << std::endl;
+    // if (_body.size() > 0) {
+        _bytesCounter = _body.size() / 10;
         if (_body.size() < BUFFSIZE)
-            bytesCounter = _body.size();
-        bytesSend = send(fd, _body.c_str(), bytesCounter, 0);
-        if (bytesSend < 0)
+            _bytesCounter = _body.size();
+        _bytesSend = send(fd, _body.c_str(), _bytesCounter, 0);
+        if (_bytesSend < 0)
             std::cout << strerror(errno) << '\n';
-        _body.erase(0, bytesCounter);
-        endSend = true;
+        _body.erase(0, _bytesSend);
+        std::cout << "body left size: " << _body.size() << std::endl;
+    // }
+    if (_body.size() <= 0) {
+        std::cout << "end of send" << std::endl;
+        _endSend = true;
     }
-    return (endSend);
+    return (_endSend);
 }
 
 std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING
@@ -138,8 +124,9 @@ std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD:
 
 int response::get_file_size(void) {
     std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!_file.is_open())
-        std::cout << "error kabiiiiiir \n";
+    if (!_file.is_open()) {
+        std::cout << "path of error file: " << _path << std::endl;
+    }
     std::streampos _fileSize = _file.tellg();
     int contentLength = static_cast<int>(_fileSize);
     _file.close();

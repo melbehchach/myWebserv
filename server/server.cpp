@@ -1,6 +1,6 @@
 #include "server.hpp"
 
-bool server::_getaddrinfo(void) {
+bool server::serverGetaddrinfo(void) {
     // void for the moment after that i must pass the result of the parser <multimap>
     memset(&hints, 0, sizeof(hints));
     hints.ai_family = AF_INET;
@@ -13,126 +13,132 @@ bool server::_getaddrinfo(void) {
     return (true);
 }
 
-int server::_socket(void) {
-    socketFd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-    if (socketFd < 0) {
+int server::serverSocket(void) {
+    _socketFd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    if (_socketFd < 0) {
         std::cout << strerror(errno);
         exit (1);
     }
-    if ((fcntl(socketFd, F_SETFL, O_NONBLOCK) < 0)) //  to check the non blocking after tests
-        std::cout << strerror(errno);
-    return (socketFd);
+    fcntl(_socketFd, F_SETFL, O_NONBLOCK); //  to check the non blocking after tests
+    return (_socketFd);
 }
 
-bool server::_setsocket(void) {
+bool server::serverSetsocket(void) {
     int setsock = 1;
-    if ((setsockopt(socketFd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock))) < 0) {
+    if ((setsockopt(_socketFd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock))) < 0) {
         std::cout << strerror(errno);
         return (false);
     }
     return (true);
 }
 
-bool server::_bind(void) {
-    if ((bind(socketFd, result->ai_addr, result->ai_addrlen)) < 0) {
+bool server::serverBind(void) {
+    if ((bind(_socketFd, result->ai_addr, result->ai_addrlen)) < 0) {
         std::cout << strerror(errno);
         return (false);
     }
     return (true);
 }
 
-bool server::_listen(void) {
-    if ((listen(socketFd, SOMAXCONN)) < 0) {
+bool server::serverListen(void) {
+    if ((listen(_socketFd, SOMAXCONN)) < 0) {
         std::cout << strerror(errno);
         return (false);
     }
     return (true);
 }
 
-int server::_poll(void) {
-    totalFds = poll(&pfds[0], pfds.size(), -1);
-    if (totalFds < 0) {
+int server::serverPoll(void) {
+    _totalFds = poll(&pfds[0], pfds.size(), -1);
+    if (_totalFds < 0) {
         std::cout << strerror(errno);
     }
-    return (totalFds);
+    return (_totalFds);
 }
 
-int server::_accept(void) {
+int server::serverAccept(void) {
     clientaddrln = sizeof(client);
-    clinetFd = accept(socketFd, (struct sockaddr*)&client, &clientaddrln);
-    if (clinetFd < 0) {
+    _clinetFd = accept(_socketFd, (struct sockaddr*)&client, &clientaddrln);
+    fcntl(_clinetFd, F_SETFL, O_NONBLOCK); //  to check the non blocking after tests
+    if (_clinetFd < 0) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
             std::cout << "after cheking the errno \n";
         else
             std::cout << strerror(errno);
     }
     else 
-        _add_descriptor(clinetFd); // fill the pfds vector
-    return (clinetFd);
+        addFDescriptor(_clinetFd); // fill the pfds vector
+    return (_clinetFd);
 }
 
-void server::_add_descriptor(int fd) {
+void server::addFDescriptor(int fd) {
     pollfds.fd = fd;
-    if (fd == socketFd)
+    if (fd == _socketFd)
         pollfds.events = POLLIN;
-    else
-        pollfds.events = POLLIN;
+        else
+    pollfds.events = POLLIN | POLLOUT | POLLHUP;
     pfds.push_back(pollfds);
 }
 
 server::server() {
-    if (!_getaddrinfo())
+    if (!serverGetaddrinfo())
         exit(1);
-    if (!_socket())
+    if (!serverSocket())
         exit(1);
-    if (!_setsocket()) 
+    if (!serverSetsocket()) 
         exit(1);
-    if (!_bind()) // in case of error must close the listner
+    if (!serverBind()) // in case of error must close the listner
         exit(1);
     freeaddrinfo(result); 
-    if(!_listen())
+    if(!serverListen())
         exit(1);
-    _add_descriptor(socketFd);
+    addFDescriptor(_socketFd);
     while (1) {
-        totalFdsCheck = _poll();
-        if (totalFdsCheck < 0)
+        _totalFdsCheck = serverPoll();
+        if (_totalFdsCheck < 0)
             break ; // poll call fialed
-        for (size_t i = 0; i < pfds.size(); i++) {
-            if (pfds[i].revents & POLLIN)
-            {
-                if (pfds[i].fd == socketFd) {
-                    _accept();   // Listening descriptor is readable. 
-                    _startrecv = true;
-                }
-                else
-                    _receive(i); // check the receiving of data
+        if (pfds[0].fd == _socketFd && pfds[0].revents & POLLIN) {
+            serverAccept();   // Listening descriptor is readable.
+            std::cout << "nwely accepted: " << _clinetFd <<  std::endl;
+            _startrecv = true;
+        }
+        for (size_t i = 1; i < pfds.size(); i++) {
+            if (pfds[i].revents & POLLIN) {
+                std::cout << "read detected at: " << pfds[i].fd << std::endl;
+                serverReceive(i); // check the receiving of data
             }
             else if (pfds[i].revents & POLLOUT)
-                _send(i);
+                serverSend(i);
+            else if (pfds[i].revents & POLLHUP)
+                std::cout << "error in the fd" << std::endl;
         }
     }
 }
 
-void server::_receive(int index) {
-    memset(buffer, 0, BUFFSIZE);
-    bytesRecv = recv(pfds[index].fd, buffer, BUFFSIZE, 0);
-    if (bytesRecv < 0) {
+void server::serverReceive(int index) {
+    std::cout << "new request: " << pfds[index].fd << std::endl;
+    memset(_buffer, 0, BUFFSIZE);
+    _bytesRecv = recv(pfds[index].fd, _buffer, BUFFSIZE, 0);
+    if (_bytesRecv < 0) {
         std::cout << strerror(errno) << '\n';
         close(pfds[index].fd);
         pfds.erase(pfds.begin() + index);
         exit(0);
     }
-    _tmpBody.append(buffer, bytesRecv);
+    _tmpBody.append(_buffer, _bytesRecv);
+    std::cout << _tmpBody << std::endl;
+    std::cout << _tmpBody.size() << std::endl;
     if (_startrecv) { // stor headers in a multi-map and erase them from the body
         _request.requestHeader(_tmpBody);
-        _path = _request._uri;
+        _path = _request._URI;
         _startrecv = false;
         if (_request._method == "POST")
             _request.erasePostRequestHeaders(_tmpBody);
-        else {
-            _response.startSend = true;
+        else{
+            std::cout << "to the response" << std::endl;
+            _response._startSend = true;
             _tmpBody.clear();
-            pfds[index].events = POLLOUT;
+            // pfds[index].events = POLLOUT;
         }
     }
     if (_request._method == "POST") {
@@ -144,8 +150,8 @@ void server::_receive(int index) {
     }
 }
 
-void server::_send(int index) {
-    _response.code = _request._status_code;
+void server::serverSend(int index) {
+    _response.code = _request._statusCode;
     if (_request._method == "POST") {
         _response.postMethodResponse(pfds[index].fd);
         if (_request._connexion != "keep-alive\r") {
@@ -160,10 +166,10 @@ void server::_send(int index) {
                 close(pfds[index].fd);
                 pfds.erase(pfds.begin() + index);
             }
+            _startrecv = true; 
+            // pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
         }
     }
-    _startrecv = true; 
-    pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
 }
 
 server::~server() {}

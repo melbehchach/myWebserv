@@ -27,25 +27,25 @@ class request {
         std::vector<std::string>                            _chunksVector;
         std::vector<std::string>                            _chunkSizeVector;
         std::string                         _method;
-        std::string                         _uri;
+        std::string                         _URI;
         std::string                         _boundary;
         std::string                         _finaleBoundary;
         std::string                         _connexion;
         std::string                         _filename;
-        std::string                         _content_type;
+        std::string                         _contentType;
         std::string                         _body;
         std::string                         _headers;
         std::string                         _chunks;
-        int                                 _content_length;
-        int                                 _status_code;
-        int                                 _body_info_size;
+        int                                 _contentLength;
+        int                                 _statusCode;
+        int                                 _bodyInfoSize;
         int                                 _chunkSize;
         bool                                _chunkedTransfer;
-        int                                 headersSize;
+        int                                 _headersSize;
         bool                                _multipleFiles;
-        int                                 position;
-        int                                 position1;
-        int                                 position2;
+        int                                 _position;
+        int                                 _position1;
+        int                                 _position2;
         
 
         request();
