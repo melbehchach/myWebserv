@@ -1,15 +1,20 @@
+#pragma once
 #ifndef RESPONSE_HPP
 #define RESPONSE_HPP
 
 #include "../header.hpp"
 #include "../request/request.hpp"
-#define BUFFSIZE 16000
+#include "../client/client.hpp"
 
+#define BUFFSIZE 16000
 class response {
 
     private:
                     /*  METHPDS */
-
+        std::multimap<int, std::string>                  _clients;
+        std::multimap<int, std::string>::iterator        _it;
+        // client              _newClient;
+        client              _clientObj;
         std::string         _statusLine;
         std::string         _headers;
         std::string         _message;
@@ -23,7 +28,7 @@ class response {
         std::string         _tmpBody;
         int                 _bytesCounter;
         int                 _bytesSend;
-
+        int                 _newClientFd;  
                     /*  ATTRIBUTS   */
 
     public:
@@ -45,7 +50,7 @@ class response {
         void postMethodResponse(int fd);
         bool getMethodResponse(int fd);
 
-
+        //  std::multimap<int, client> clientsToServ
 
         void DELETE_response(void);
         int get_file_size(void);

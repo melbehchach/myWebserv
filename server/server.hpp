@@ -12,18 +12,14 @@
 #define BUFFSIZE 16000
 
 class server {
-    
-
     private:
     // SERVER ATTRIBUTS
-        std::multimap<int, client>                  _clients;
-        std::multimap<int, client>::iterator        _it;
         std::vector<struct pollfd>  pfds;
         struct addrinfo             hints;
         struct addrinfo             *result;
-        struct sockaddr_in          client;
+        struct sockaddr_in          _client;
         struct pollfd               pollfds;
-        socklen_t                   clientaddrln;
+        socklen_t                   _clientaddrln;
         request                     _request;
         response                    _response;
         std::string                 _path;
@@ -49,6 +45,8 @@ class server {
         void                        serverSend(int index);
 
     public:
+
+         
         server();
         ~server();
 };

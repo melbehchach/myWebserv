@@ -57,8 +57,8 @@ int server::serverPoll(void) {
 }
 
 int server::serverAccept(void) {
-    clientaddrln = sizeof(client);
-    _clinetFd = accept(_socketFd, (struct sockaddr*)&client, &clientaddrln);
+    _clientaddrln = sizeof(_client);
+    _clinetFd = accept(_socketFd, (struct sockaddr*)&_client, &_clientaddrln);
     fcntl(_clinetFd, F_SETFL, O_NONBLOCK); //  to check the non blocking after tests
     if (_clinetFd < 0) {
         if (errno == EWOULDBLOCK || errno == EAGAIN)
@@ -97,14 +97,14 @@ server::server() {
         _totalFdsCheck = serverPoll();
         if (_totalFdsCheck < 0)
             break ; // poll call fialed
-        if (pfds[0].fd == _socketFd && pfds[0].revents & POLLIN) {
+        if (pfds[0].revents & POLLIN) { // pfds[0].fd == _socketFd && 
             serverAccept();   // Listening descriptor is readable.
             std::cout << "nwely accepted: " << _clinetFd <<  std::endl;
             _startrecv = true;
         }
         for (size_t i = 1; i < pfds.size(); i++) {
             if (pfds[i].revents & POLLIN) {
-                std::cout << "read detected at: " << pfds[i].fd << std::endl;
+                // std::cout << "read detected at: " << pfds[i].fd << std::endl;
                 serverReceive(i); // check the receiving of data
             }
             else if (pfds[i].revents & POLLOUT)
@@ -126,11 +126,13 @@ void server::serverReceive(int index) {
         exit(0);
     }
     _tmpBody.append(_buffer, _bytesRecv);
-    std::cout << _tmpBody << std::endl;
-    std::cout << _tmpBody.size() << std::endl;
+    // std::cout << _tmpBody << std::endl;
+    // std::cout << _tmpBody.size() << std::endl;
     if (_startrecv) { // stor headers in a multi-map and erase them from the body
         _request.requestHeader(_tmpBody);
         _path = _request._URI;
+        _response._path = _path;
+        _response.code = _request._statusCode;
         _startrecv = false;
         if (_request._method == "POST")
             _request.erasePostRequestHeaders(_tmpBody);
@@ -151,7 +153,6 @@ void server::serverReceive(int index) {
 }
 
 void server::serverSend(int index) {
-    _response.code = _request._statusCode;
     if (_request._method == "POST") {
         _response.postMethodResponse(pfds[index].fd);
         if (_request._connexion != "keep-alive\r") {
@@ -160,15 +161,19 @@ void server::serverSend(int index) {
         }
     }
     else if (_request._method == "GET") {
-        _response._path = _path;
-        if (_response.getMethodResponse(pfds[index].fd)) {
-            if (_request._connexion != "keep-alive\r") {
-                close(pfds[index].fd);
-                pfds.erase(pfds.begin() + index);
+        // _it = _clients.find(pfds[index].fd);
+        // if (_it != _clients.end()) {
+            // std::cout << "debug" << std::endl;
+            std::cout << "int of client FD: " << pfds[index].fd << std::endl;
+            if (_response.getMethodResponse(pfds[index].fd)) {
+                if (_request._connexion != "keep-alive\r") {
+                    close(pfds[index].fd);
+                    pfds.erase(pfds.begin() + index);
+                }
+                _startrecv = true; 
+                // pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
             }
-            _startrecv = true; 
-            // pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
-        }
+        // }
     }
 }
 

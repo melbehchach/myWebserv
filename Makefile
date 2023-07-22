@@ -1,12 +1,12 @@
 CC = c++
 CFLAGS = -std=c++98 -Wall -Werror -Wextra 
 NAME = webserv
-HEADER = header.hpp 
+HEADER = header.hpp
 SRC = ./main.cpp \
 	./server/server.cpp \
+	./client/client.cpp \
 	./request/request.cpp \
-	./response/response.cpp \
-	./client/client.cpp
+	./response/response.cpp 
 
 OBJ = $(SRC:.cpp=.o)
 

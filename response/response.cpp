@@ -86,25 +86,42 @@ std::string response::getHeaders(int size) {
 bool response::getMethodResponse(int fd) {
     _endSend = false;
     if (_startSend) {
+        std::cout << "here is a new client" << std::endl;
+        _newClientFd = fd;
         _body = getHeaders(get_file_size());
         std::cout << _body << std::endl;
         _body += readFile();
+        _clients.insert( std::pair<int, std::string>(_newClientFd, _body) );
         _startSend = false;
     }
-    std::cout << "send response: " << fd << std::endl;
-    // if (_body.size() > 0) {
-        _bytesCounter = _body.size() / 10;
-        if (_body.size() < BUFFSIZE)
-            _bytesCounter = _body.size();
-        _bytesSend = send(fd, _body.c_str(), _bytesCounter, 0);
-        if (_bytesSend < 0)
-            std::cout << strerror(errno) << '\n';
-        _body.erase(0, _bytesSend);
-        std::cout << "body left size: " << _body.size() << std::endl;
-    // }
-    if (_body.size() <= 0) {
-        std::cout << "end of send" << std::endl;
-        _endSend = true;
+    // std::cout << "send response: " << fd << std::endl;
+    // if (_clientObj._body.size() > 0) { 
+    // && _clientObj._clientFd == fd
+    _it = _clients.find(fd);
+    if (_it != _clients.end()) {
+        std::cout << "client param: " << fd << std::endl;
+        std::cout << "iterator fd: " << _it->first << std::endl;
+    }
+    else {
+        std::cout << "something wrong" << std::endl;
+        _endSend = false;
+    }
+    if (_newClientFd == fd) {
+            _bytesCounter = _body.size() / 10;
+            if (_body.size() < BUFFSIZE)
+                _bytesCounter = _body.size();
+            std::cout << "size of map: " << _clients.size() << std::endl;
+            _bytesSend = send(fd, _body.c_str(), _bytesCounter, 0);
+            if (_bytesSend < 0)
+                std::cout << strerror(errno) << '\n';
+            _body.erase(0, _bytesSend);
+            std::cout << "body left size: " << _body.size() << std::endl;
+        // }
+        if (_body.size() <= 0) {
+            std::cout << "end of send" << std::endl;
+            // _stopSend = false;
+            _endSend = true;
+        }
     }
     return (_endSend);
 }
