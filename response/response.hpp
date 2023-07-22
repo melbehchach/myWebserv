@@ -11,8 +11,8 @@ class response {
 
     private:
                     /*  METHPDS */
-        std::multimap<int, std::string>                  _clients;
-        std::multimap<int, std::string>::iterator        _it;
+        std::map<int, std::string>                  _clients;
+        std::map<int, std::string>::iterator        _it;
         // client              _newClient;
         client              _clientObj;
         std::string         _statusLine;
@@ -28,13 +28,14 @@ class response {
         std::string         _tmpBody;
         int                 _bytesCounter;
         int                 _bytesSend;
-        int                 _newClientFd;  
+        // int                 _newClientFd;  
                     /*  ATTRIBUTS   */
 
     public:
         response();
         std::string         _path;
         bool                _startSend;
+        bool                _continueSend;
         bool                _endSend;
         int code;
         
