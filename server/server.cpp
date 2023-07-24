@@ -50,7 +50,6 @@ bool server::serverListen(void) {
 
 int server::serverPoll(void) {
     _totalFds = poll(&pfds[0], pfds.size(), -1);
-    std::cout << pfds.size() << std::endl;
     if (_totalFds < 0) {
         std::cout << strerror(errno);
     }
@@ -74,11 +73,10 @@ int server::serverAccept(void) {
 
 void server::addFDescriptor(int fd) {
     pollfds.fd = fd;
-    if (fd == _socketFd)
+    if (pollfds.fd == _socketFd)
         pollfds.events = POLLIN;
     else
         pollfds.events = POLLIN | POLLOUT | POLLHUP;
-    pollfds.revents = 0;
     pfds.push_back(pollfds);
 }
 
@@ -99,75 +97,87 @@ server::server() {
         _totalFdsCheck = serverPoll();
         if (_totalFdsCheck < 0)
             break ; // poll call failed
-        if (pfds[0].revents & POLLIN) { 
-            serverAccept();   // Listening descriptor is readable.
-            std::cout << "nwely accepted: " << _clinetFd <<  std::endl;
-            _startrecv = true;
-        }
-        if (_totalFdsCheck <= 0)
-            continue;
-        for (size_t i = 1; i < pfds.size(); i++) {
+        for (size_t i = 0; i < pfds.size(); i++) {
             if (pfds[i].revents & POLLIN) {
-                serverReceive(i); // check the receiving of data
+                if (pfds[i].fd == _socketFd && i == 0) { 
+                    _newClientFd = serverAccept();   // Listening descriptor is readable.
+                    _clientObj._fd = _newClientFd;
+                    _clientObj._startRecv = true; // To get HTTP header (request headers)
+                    _clientsMap.insert( std::pair<int, client>(_newClientFd, client(_clientObj)) );
+                    std::cout << "size of map: " << _clientsMap.size() << std::endl;
+                    // std::cout << "nwely accepted: " << _clientObj._fd <<  std::endl;
+                    // continue;
+                }
+                else
+                    serverReceive(pfds[i].fd); // check the receiving of data
             }
             else if (pfds[i].revents & POLLOUT)
-                serverSend(i);
+                serverSend(pfds[i].fd);
+            else if (pfds[i].revents & POLLHUP)
+                std::cerr << "CLIENT GOT PROBLEMS" << std::endl;
         }
     }
 }
 
-void server::serverReceive(int index) {
-    std::cout << "new request: " << pfds[index].fd << std::endl;
-    memset(_buffer, 0, BUFFSIZE);
-    _bytesRecv = recv(pfds[index].fd, _buffer, BUFFSIZE, 0);
-    if (_bytesRecv < 0) {
-        std::cout << strerror(errno) << '\n';
-        close(pfds[index].fd);
-        pfds.erase(pfds.begin() + index);
-        exit(0);
-    }
-    _tmpBody.append(_buffer, _bytesRecv);
-    std::cout << _tmpBody << std::endl;
-    if (_startrecv) { // stor headers in a multi-map and erase them from the body
-        _request.requestHeader(_tmpBody);
-        _path = _request._URI;
-        _response._path = _path;
-        _response.code = _request._statusCode;
-        _startrecv = false;
-        if (_request._method == "POST")
-            _request.erasePostRequestHeaders(_tmpBody);
-    }
-    if (_request._method == "POST") {
-        _request.postMethod(_tmpBody);
-        if (_tmpBody.size() == 0) {
-            std::cout << "response" << std::endl;
-            // pfds[index].events = POLLOUT; // FORCE THE POLLOUT EVENT
+void server::serverReceive(int fd) {
+    _mapIt = _clientsMap.find(fd);
+    if (_mapIt != _clientsMap.end()) {
+        std::cout << "new request: " << _mapIt->second._fd << std::endl;
+        memset(_buffer, 0, BUFFSIZE);
+        _bytesRecv = recv(fd, _buffer, BUFFSIZE, 0);
+        if (_bytesRecv < 0) {
+            std::cout << strerror(errno) << '\n';
+            close(fd);
+            std::cout << "close" << std::endl;
+            // pfds.erase(pfds.begin() + index);  handle how to erase the fd from the poll vectors
+            // the request should be empted
+            // exit(0);
         }
-    }
-    else if (_request._method == "GET") {
-        std::cout << "to the response" << std::endl;
-        _response._startSend = true;
+        _mapIt->second._requestBody.append(_buffer, _bytesRecv);
+        if (_mapIt->second._startRecv) { // stor headers in a multi-map and erase them from the body
+            std::cout << "request from client: " << _mapIt->second._fd << std::endl;
+            std::cout << _mapIt->second._requestBody << std::endl;
+            _request.requestHeader(_mapIt->second._requestBody);
+            _response._path  = _request._URI;
+            _response.code = _request._statusCode;
+            _mapIt->second._startRecv = false;
+            if (_request._method == "POST")
+                _request.erasePostRequestHeaders(_mapIt->second._requestBody);
+        }
+        if (_request._method == "POST") {
+            _request.postMethod(_mapIt->second._requestBody);
+        }
+        else if (_request._method == "GET") {
+            _mapIt->second._requestBody.clear();
+            _mapIt->second._responseBody.clear();
+            std::cout << "to the response" << std::endl;
+            _response._startSend = true;
+        }
     }
 }
 
-void server::serverSend(int index) {
-    if (_request._method == "POST") {
-        _response.postMethodResponse(pfds[index].fd);
-        if (_request._connexion != "keep-alive\r") {
-            close(pfds[index].fd);
-            pfds.erase(pfds.begin() + index);
-        }
-    }
-    else if (_request._method == "GET") {
-        std::cout << "int of client FD: " << pfds[index].fd << std::endl;
-        if (_response.getMethodResponse(pfds[index].fd)) {
-            _tmpBody.clear();
-            if (_request._connexion != "keep-alive\r") {
-                close(pfds[index].fd);
-                pfds.erase(pfds.begin() + index);
+void server::serverSend(int fd) {
+    _mapIt = _clientsMap.find(fd);
+    if (_mapIt != _clientsMap.end()) {
+        // if (_request._method == "POST") {
+        //     _response.postMethodResponse(fd);
+        //     if (_request._connexion != "keep-alive\r") {
+        //         close(fd);
+        //         pfds.erase(pfds.begin() + index);
+        //     }
+        // }
+        if (_request._method == "GET") {
+            std::cout << "size of file: " << _mapIt->second._responseBody.size() << std::endl;
+            // std::cout << "int of client FD: " << fd << std::endl;
+            if (_response.getMethodResponse(_mapIt->second)) {
+                std::cout << "end of send" << std::endl;
+                if (_request._connexion != "keep-alive\r") {
+                    close(_mapIt->second._fd);
+                    // pfds.erase(pfds.begin() + index); handle how to erase the fd from the poll vectors
+                }
+                _mapIt->second._startRecv = false;
+                // pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
             }
-            _startrecv = true; 
-            // pfds[index].events = POLLIN; // FORCR THE POLLIN EVENT
         }
     }
 }

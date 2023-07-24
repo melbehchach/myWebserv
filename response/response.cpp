@@ -83,38 +83,32 @@ std::string response::getHeaders(int size) {
     return (_headers);
 }
 
-bool response::getMethodResponse(int fd) {
+bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_startSend) {
-        std::cout << "here is a new client" << std::endl;
-        // _newClientFd = fd;
-        _body = getHeaders(get_file_size());
-        std::cout << _body << std::endl;
-        _body += readFile();
-        std::cout << _body.size() << std::endl;
-        // _clients.insert( std::pair<int, std::string>(_newClientFd, _body) );
+        std::cout << "is a new client: " << _client._fd << std::endl;
+        _client._responseBody = getHeaders(get_file_size());
+        std::cout << _client._responseBody << std::endl;
+        _client._responseBody += readFile();
+        _tmpBody = _client._responseBody;
         _startSend = false;
-        _continueSend = true;
+        _headers.clear();
     }
-    // _it = _clients.find(fd);
-    if (_continueSend) {
-            _bytesCounter = _body.size() / 20;
-            if (_body.size() < BUFFSIZE)
-                _bytesCounter = _body.size();
-            // std::cout << "size of map: " << _clients.size() << std::endl;
-            _bytesSend = send(fd, _body.c_str(), _bytesCounter, 0);
-            if (_bytesSend < 0)
-                std::cout << strerror(errno) << '\n';
-            _body.erase(0, _bytesSend);
-            std::cout << "body left size: " << _body.size() << std::endl;
-            _continueSend = true;
-        }
-        if (_body.size() <= 0 && _continueSend) {
-            std::cout << "end of send" << std::endl;
-            _continueSend = false;
-            _endSend = true;
-        }
-    // }
+    // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
+    if (_client._responseBody.size() > 0) {
+        _bytesCounter = _client._responseBody.size() / 10;     
+        if (_client._responseBody.size() < BUFFSIZE)
+            _bytesCounter = _client._responseBody.size();
+        _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
+        if (_bytesSend < 0)
+            std::cout << strerror(errno) << '\n';
+        _client._responseBody.erase(0, _bytesSend);
+    }
+    else if (_client._responseBody.size() == 0) {
+        std::cout << "end of send for client: " << _client._fd << std::endl;
+        _client._responseBody.clear();
+        _endSend = true;
+    }
     return (_endSend);
 }
 

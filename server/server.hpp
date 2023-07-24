@@ -9,7 +9,7 @@
 
 
 #define PORT "9430"
-#define BUFFSIZE 16000
+#define BUFFSIZE 100000
 
 class server {
     private:
@@ -24,13 +24,14 @@ class server {
         response                    _response;
         std::string                 _path;
         std::string                 _tmpBody;
-        bool                        _startrecv;
-        char                        _buffer[16000];
+        // bool                        _startRecv;
+        char                        _buffer[100000];
         int                         _socketFd;
         int                         _clinetFd;
         int                         _bytesRecv;
         int                         _totalFds;
         int                         _totalFdsCheck;
+        int                         _newClientFd;
 
     // SERVER METHODS
         bool                        serverGetaddrinfo(void);
@@ -41,11 +42,14 @@ class server {
         int                         serverAccept(void);
         int                         serverPoll(void);
         void                        addFDescriptor(int fd);
-        void                        serverReceive(int index);
-        void                        serverSend(int index);
+        void                        serverReceive(int fd);
+        void                        serverSend(int fd);
 
     public:
 
+        client                                      _clientObj;
+        std::multimap<int, client>                  _clientsMap;
+        std::multimap<int, client>::iterator        _mapIt;
          
         server();
         ~server();

@@ -6,15 +6,12 @@
 #include "../request/request.hpp"
 #include "../client/client.hpp"
 
-#define BUFFSIZE 16000
+#define BUFFSIZE 100000
 class response {
 
     private:
                     /*  METHPDS */
-        std::map<int, std::string>                  _clients;
-        std::map<int, std::string>::iterator        _it;
-        // client              _newClient;
-        client              _clientObj;
+        // client              _clientObj;
         std::string         _statusLine;
         std::string         _headers;
         std::string         _message;
@@ -28,7 +25,6 @@ class response {
         std::string         _tmpBody;
         int                 _bytesCounter;
         int                 _bytesSend;
-        // int                 _newClientFd;  
                     /*  ATTRIBUTS   */
 
     public:
@@ -49,7 +45,7 @@ class response {
         std::string dateHeader(void);
         std::string getHeaders(int size);
         void postMethodResponse(int fd);
-        bool getMethodResponse(int fd);
+        bool getMethodResponse(client &_client);
 
         //  std::multimap<int, client> clientsToServ
 

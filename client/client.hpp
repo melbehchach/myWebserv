@@ -12,16 +12,23 @@ class client {
     private:
 
     public:
-        std::string _body; // for request and response body
+        std::string _requestBody; // for request and response body
+        std::string _responseBody; // for request and response body
         std::string _port;
         std::string _host;
         std::string _hostname;
-        std::string _path;
-        int         _clientFd;
-        int         _bytesCounter;  // for the response when serving a file 
-        int         _bytesSend; // for the response when serving a file
-        bool        _stopSend;
+        std::string _URI;
+        int         _fd;
+        bool        _startRecv;
+        bool        _startSend;
+        bool        _endRecv;
+        bool        _endSend;
+        // int         _clientFd;
+        // int         _bytesCounter;  // for the response when serving a file 
+        // int         _bytesSend; // for the response when serving a file
+        // bool        _stopSend;
 
+        void clearBody(void);
 
     client();
     ~client();
