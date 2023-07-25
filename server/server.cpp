@@ -100,10 +100,12 @@ server::server() {
         for (size_t i = 0; i < pfds.size(); i++) {
             if (pfds[i].revents & POLLIN) {
                 if (pfds[i].fd == _socketFd && i == 0) { 
+                    client _clientObj;
                     _newClientFd = serverAccept();   // Listening descriptor is readable.
-                    _clientObj._fd = _newClientFd;
-                    _clientObj._startRecv = true; // To get HTTP header (request headers)
-                    _clientsMap.insert( std::pair<int, client>(_newClientFd, client(_clientObj)) );
+                    _clientObj.setFd(_newClientFd);
+                    _clientObj.enableStartRecv();
+                    _clientsMap.insert( std::pair<int, client>(_newClientFd, _clientObj) );
+                    // _clientObj._startRecv = true; // To get HTTP header (request headers)
                     std::cout << "size of map: " << _clientsMap.size() << std::endl;
                     // std::cout << "nwely accepted: " << _clientObj._fd <<  std::endl;
                     // continue;
@@ -151,7 +153,7 @@ void server::serverReceive(int fd) {
             _mapIt->second._requestBody.clear();
             _mapIt->second._responseBody.clear();
             std::cout << "to the response" << std::endl;
-            _response._startSend = true;
+            // _response._startSend = true;
         }
     }
 }

@@ -47,7 +47,7 @@ class server {
 
     public:
 
-        client                                      _clientObj;
+        // 
         std::multimap<int, client>                  _clientsMap;
         std::multimap<int, client>::iterator        _mapIt;
          

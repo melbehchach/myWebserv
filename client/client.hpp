@@ -28,7 +28,13 @@ class client {
         // int         _bytesSend; // for the response when serving a file
         // bool        _stopSend;
 
+        void setFd(int fd);
+        void enableStartRecv(void);
+        void disableStartRecv(void);
+        void enableStartSend(void);
+        void disableStartSend(void);
         void clearBody(void);
+
 
     client();
     ~client();
