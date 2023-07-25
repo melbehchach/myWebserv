@@ -9,12 +9,14 @@
 
 
 #define PORT "9430"
-#define BUFFSIZE 100000
+#define BUFFSIZE 16000
 
 class server {
     private:
     // SERVER ATTRIBUTS
+        std::vector<int> listners;
         std::vector<struct pollfd>  pfds;
+
         struct addrinfo             hints;
         struct addrinfo             *result;
         struct sockaddr_in          _client;
@@ -24,8 +26,11 @@ class server {
         response                    _response;
         std::string                 _path;
         std::string                 _tmpBody;
+        // std::string                 _port;
+        // std::string                 _host;
+
         // bool                        _startRecv;
-        char                        _buffer[100000];
+        char                        _buffer[16000];
         int                         _socketFd;
         int                         _clinetFd;
         int                         _bytesRecv;
@@ -34,16 +39,16 @@ class server {
         int                         _newClientFd;
 
     // SERVER METHODS
-        bool                        serverGetaddrinfo(void);
+        bool                        serverGetaddrinfo(std::string &_port, std::string &_host);
         int                         serverSocket(void);
         bool                        serverSetsocket(void);
         bool                        serverBind(void);
         bool                        serverListen(void);
-        int                         serverAccept(void);
+        int                         serverAccept(int fd);
         int                         serverPoll(void);
         void                        addFDescriptor(int fd);
-        void                        serverReceive(int fd);
-        void                        serverSend(int fd);
+        void                        serverReceive(int fd, int index);
+        void                        serverSend(int fd, int index);
 
     public:
 
@@ -51,7 +56,7 @@ class server {
         std::multimap<int, client>                  _clientsMap;
         std::multimap<int, client>::iterator        _mapIt;
          
-        server();
+        server(std::multimap<std::string, std::pair<std::string, std::string> >const & m);
         ~server();
 };
 

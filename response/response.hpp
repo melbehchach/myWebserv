@@ -6,7 +6,7 @@
 #include "../request/request.hpp"
 #include "../client/client.hpp"
 
-#define BUFFSIZE 100000
+#define BUFFSIZE 16000
 class response {
 
     private:
@@ -44,7 +44,7 @@ class response {
         std::string serverNameHeader(void);
         std::string dateHeader(void);
         std::string getHeaders(int size);
-        void postMethodResponse(int fd);
+        void postMethodResponse(client &_client);
         bool getMethodResponse(client &_client);
 
         //  std::multimap<int, client> clientsToServ

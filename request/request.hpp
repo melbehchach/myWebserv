@@ -32,7 +32,7 @@ class request {
         std::string                         _URI;
         std::string                         _boundary;
         std::string                         _finaleBoundary;
-        std::string                         _connexion;
+        std::string                         _connection;
         std::string                         _filename;
         std::string                         _contentType;
         std::string                         _body;
@@ -54,8 +54,8 @@ class request {
         void                                requestHeader(std::string& buffer);
 
         // POST REQUEST METHODS
-        void                                postMethod(std::string &data);
-        void                                erasePostRequestHeaders(std::string& buffer);
+        void                                postMethod(client &_client);
+        void                                erasePostRequestHeaders(client &_client);
         void                                normalPostRequestBody(std::string &buffer, int boundaryPosition);
         void                                chunkedPostRequestBody(std::string &buffer);
         std::vector<std::string>            ft_split(const std::string &str, const std::string &del);

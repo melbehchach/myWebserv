@@ -11,29 +11,29 @@ void client::setFd(int fd) {
 
 void client::enableStartRecv(void) {
     _startRecv = true;
-    std::cout << "strat receive enable" << std::endl;
+    // std::cout << "strat receive enable" << std::endl;
 }
 
 void client::disableStartRecv(void) {
-    _endRecv = false;
-    std::cout << "strat receive desabled" << std::endl;
+    _startRecv = false;
+    // std::cout << "strat receive desabled" << std::endl;
 }
 
 void client::enableStartSend(void) {
-    _startSnd = true;
-    std::cout << "strat receive enable" << std::endl;
+    _startSend = true;
+    // std::cout << "strat send enable" << std::endl;
 }
 
 void client::disableStartSend(void) {
-    std::cout << "strat receive desabled" << std::endl;
+    // std::cout << "strat send desabled" << std::endl;
     _startSend = false;
 }
 
-void client::clearBody(void) {
-    if (_endRecv)
-        _requestBody.clear();
-    else if (_endSend)
-        _responseBody.clear();
-}
+// void client::clearBody(void) {
+//     if (_endRecv)
+//         _requestBody.clear();
+//     else if (_endSend)
+//         _responseBody.clear();
+// }
 
 client::~client() {}

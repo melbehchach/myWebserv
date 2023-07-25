@@ -56,7 +56,8 @@ std::string response::contentTypeHeader(void) {
 }
 
                 /*                      POST METHOD RESPONSE                      */
-void response::postMethodResponse(int fd) {
+void response::postMethodResponse(client &_client) {
+    // std::cout << "time to response" << std::endl;
     int counter = 0;
 
     _headers = statusLine();
@@ -65,9 +66,10 @@ void response::postMethodResponse(int fd) {
     _headers += dateHeader();
     _headers += contentLengthHeader(0);
     _headers += "\r\n";
-    counter = send(fd, _headers.c_str(), _headers.size(), 0);
+    counter = send(_client._fd, _headers.c_str(), _headers.size(), 0);
     if (counter < 0)
         std::cout << strerror(errno) << '\n';
+    _client.disableStartSend();
 }
 
                 /*                      GET METHOD RESPONSE                      */
@@ -85,14 +87,11 @@ std::string response::getHeaders(int size) {
 
 bool response::getMethodResponse(client &_client) {
     _endSend = false;
-    if (_startSend) {
-        std::cout << "is a new client: " << _client._fd << std::endl;
+    if (_client._startSend) {
         _client._responseBody = getHeaders(get_file_size());
-        std::cout << _client._responseBody << std::endl;
+        // std::cout << _client._responseBody << std::endl;
         _client._responseBody += readFile();
-        _tmpBody = _client._responseBody;
-        _startSend = false;
-        _headers.clear();
+        _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
     if (_client._responseBody.size() > 0) {
@@ -105,7 +104,6 @@ bool response::getMethodResponse(client &_client) {
         _client._responseBody.erase(0, _bytesSend);
     }
     else if (_client._responseBody.size() == 0) {
-        std::cout << "end of send for client: " << _client._fd << std::endl;
         _client._responseBody.clear();
         _endSend = true;
     }

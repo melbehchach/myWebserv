@@ -18,11 +18,12 @@ class client {
         std::string _host;
         std::string _hostname;
         std::string _URI;
+        // std::string _method;
         int         _fd;
         bool        _startRecv;
         bool        _startSend;
-        bool        _endRecv;
-        bool        _endSend;
+        // bool        _endRecv;
+        // bool        _endSend;
         // int         _clientFd;
         // int         _bytesCounter;  // for the response when serving a file 
         // int         _bytesSend; // for the response when serving a file
