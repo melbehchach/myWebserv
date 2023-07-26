@@ -46,10 +46,10 @@ class response {
         std::string getHeaders(int size);
         void postMethodResponse(client &_client);
         bool getMethodResponse(client &_client);
+        void deleteMethodResponse(client &_client);
 
         //  std::multimap<int, client> clientsToServ
 
-        void DELETE_response(void);
         int get_file_size(void);
         std::string	readFile(void);
         // std::string	readFile(void);

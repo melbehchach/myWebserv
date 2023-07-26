@@ -55,9 +55,25 @@ std::string response::contentTypeHeader(void) {
     return (_contentType);
 }
 
+                /*                      DELETE METHOD RESPONSE                      */
+
+void response::deleteMethodResponse(client &_client) {
+    int counter = 0;
+
+    _headers = statusLine();
+    _headers += connexionHeader();
+    _headers += serverNameHeader();
+    _headers += dateHeader();
+    _headers += contentLengthHeader(0);
+    _headers += "\r\n";
+    counter = send(_client._fd, _headers.c_str(), _headers.size(), 0);
+    if (counter < 0)
+        std::cout << strerror(errno) << '\n';
+    _client.disableStartSend();
+}
+
                 /*                      POST METHOD RESPONSE                      */
 void response::postMethodResponse(client &_client) {
-    // std::cout << "time to response" << std::endl;
     int counter = 0;
 
     _headers = statusLine();
@@ -89,7 +105,6 @@ bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_client._startSend) {
         _client._responseBody = getHeaders(get_file_size());
-        // std::cout << _client._responseBody << std::endl;
         _client._responseBody += readFile();
         _client.disableStartSend();
     }
@@ -132,10 +147,6 @@ int response::get_file_size(void) {
     int contentLength = static_cast<int>(_fileSize);
     _file.close();
     return (contentLength);
-}
-
-void response::DELETE_response(void) {
-    
 }
 
 

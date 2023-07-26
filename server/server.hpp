@@ -6,9 +6,6 @@
 #include "../response/response.hpp"
 #include "../client/client.hpp"
 
-
-
-#define PORT "9430"
 #define BUFFSIZE 16000
 
 class server {

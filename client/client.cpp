@@ -1,7 +1,7 @@
 #include "client.hpp"
 
 client::client() {
-    std::cout << "CREATION DONE" << std::endl;
+    // Set of attributs
 }
 
 
