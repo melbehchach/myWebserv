@@ -41,9 +41,9 @@ class response {
         std::string contentLengthHeader(int size);
         std::string contentTypeHeader(void);
         std::string connexionHeader(void);
-        std::string serverNameHeader(void);
+        std::string serverNameHeader(client &_client);
         std::string dateHeader(void);
-        std::string getHeaders(int size);
+        std::string getHeaders(int size, client &_client);
         void postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);
         void deleteMethodResponse(client &_client);

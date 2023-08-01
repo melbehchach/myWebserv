@@ -44,6 +44,8 @@ class server {
         int                         _locationIndex;
         ConfigFileParser const &    _configFile;
         std::string                 _URI;
+        bool                        _isFile;
+        bool                        _isDirectory;
 
     
     // SERVER METHODS
@@ -61,6 +63,12 @@ class server {
         bool                        RedirectionAvilability(void);
         bool                        AllowedMthods(void);
         std::string                 AppendRootAndUri(void);
+        // FOR GET METHOD
+        void                        serveDirecotry(void);
+        void                        serveFile(void);
+        void                        createHtmlFile(std::string fName);
+        // void                        destroyHtmlFile(void);
+
 
     
 

@@ -28,9 +28,9 @@ std::string response::connexionHeader(void) {
     return (_connexion);
 }
 
-std::string response::serverNameHeader(void) {
+std::string response::serverNameHeader(client &_client) {
     _serverName = "server: ";
-    _serverName += "Aba7law's webserv v1.0";
+    _serverName += _client._hostname;
     _serverName += "\r\n";
     return (_serverName);
 }
@@ -62,7 +62,7 @@ void response::deleteMethodResponse(client &_client) {
 
     _headers = statusLine();
     _headers += connexionHeader();
-    _headers += serverNameHeader();
+    _headers += serverNameHeader(_client);
     _headers += dateHeader();
     _headers += contentLengthHeader(0);
     _headers += "\r\n";
@@ -78,7 +78,7 @@ void response::postMethodResponse(client &_client) {
 
     _headers = statusLine();
     _headers += connexionHeader();
-    _headers += serverNameHeader();
+    _headers += serverNameHeader(_client);
     _headers += dateHeader();
     _headers += contentLengthHeader(0);
     _headers += "\r\n";
@@ -89,10 +89,10 @@ void response::postMethodResponse(client &_client) {
 }
 
                 /*                      GET METHOD RESPONSE                      */
-std::string response::getHeaders(int size) {
+std::string response::getHeaders(int size, client &_client) {
     contentType(_path);
     _headers = statusLine();
-    _headers += serverNameHeader();
+    _headers += serverNameHeader(_client);
     _headers += dateHeader();
     _headers += contentTypeHeader();
     _headers += contentLengthHeader(size);
@@ -105,7 +105,7 @@ bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_client._startSend) {
         // std::cout << "respponse clinet number: " << _client._fd << std::endl;
-        _client._responseBody = getHeaders(get_file_size());
+        _client._responseBody = getHeaders(get_file_size(), _client);
         // std::cout << _client._responseBody << std::endl;
         _client._responseBody.append(readFile());
         _client.disableStartSend();

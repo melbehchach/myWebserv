@@ -183,6 +183,20 @@ void server::serverReceive(int fd, int index) {
         if (_mapIt->second._startRecv) { // stor headers in a multi-map and erase them from the body
             _request.requestHeader(_mapIt->second._requestBody);
             _response.code = 200;
+            _mapIt->second.disableStartRecv();
+            if (_request._method == "POST")
+                _request.erasePostRequestHeaders(_mapIt->second);
+
+        }
+
+        // Handle the request details
+
+        if (_request._method == "POST") {
+            _request.postMethod(_mapIt->second);
+        }
+        else if (_request._method == "GET") { // WHAT HAPPENS IF THE METHOD IS GET
+            
+            //  VALIDATION OF LOCATION => PERFECT MATCH OR REFIX MATCH
 
             if(!LocationAvilability(_mapIt->second)) {   // IS THE LOCATION AVAILABLE IN THE SERVER
                 std::cout << "location not found" << std::endl;
@@ -196,21 +210,9 @@ void server::serverReceive(int fd, int index) {
                 std::cout << "ma method ma pikala" << std::endl;
                 _response.code = 405;
             }
-            else {
-                _mapIt->second.disableStartRecv();
-                if (_request._method == "POST")
-                    _request.erasePostRequestHeaders(_mapIt->second);
-            }
 
-        }
+            // PROCEED TO REPONSE
 
-        // Handle the request details
-
-        if (_request._method == "POST") {
-            _request.postMethod(_mapIt->second);
-        }
-        else if (_request._method == "GET") { // WHAT HAPPENS IF THE METHOD IS GET
-            std::cout << "response code: " << _response.code << std::endl;
             if (_response.code == 200) {
                 _mapIt->second._requestBody.clear();
                 _URI = AppendRootAndUri();
@@ -220,9 +222,12 @@ void server::serverReceive(int fd, int index) {
                 }
                 else {
                     // std::cout << "to response" << std::endl;
+                    if (_isDirectory)
+                        serveDirecotry();
                     _response._path = _URI; // MUST UPDATE THE RESPONSE PATH
                 }
             }
+
             _mapIt->second.enableStartSend();
         }
         else if (_request._method == "DELETE") {
@@ -273,15 +278,19 @@ void server::serverSend(int fd, int index) {
 
 
 bool server::LocationAvilability(client & _client) {
+    // NGINX LOCATION MATCHING EXACTE URL
+    // NGINX LOCATION BLOCK FOR A DIRECTORY
+    // NGINX LOCATION BLOCK FOR A DIRECTORY "A LOCATION WITH ONLY /"
+
+    std::string tmp;
+
     _serverIndex = -1;
     _locationIndex = -1;
 
-    std::cout << "client number: " << _client._fd << std::endl;
     for (size_t i = 0; i < _configFile.GetServers().size(); i++) { // GET THE SERVER
         for (size_t j = 0; j < _configFile.GetServers()[i].GetPortNumbers()[j].size(); j++) {
             if (_client._port == _configFile.GetServers()[i].GetPortNumbers()[j]){
                 _serverIndex = i;
-                std::cout << "found it: " << _serverIndex << std::endl;
                 break;
             }
         }
@@ -289,14 +298,26 @@ bool server::LocationAvilability(client & _client) {
             break; // TO BREAK THE SECOND LOOP
     }
 
-    std::cout << "server number: " << _serverIndex << std::endl;
-    std::cout << "Location: " << _request._URI << std::endl;
-    
+    std::cout << "URI => " << _request._URI << std::endl;
+    std::cout << _configFile.GetServers()[_serverIndex].GetLocationContexts().size() << std::endl;
+
     for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++) { // LOOKING FOR THE LOCATION INSIDE THE SERVER
-        if (_request._URI == _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri()) {
+        tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri();
+        // std::cout << tmp << std::endl;
+        if (_request._URI == tmp) { // NGINX LOCATION MATCHING EXACTE URL
+            std::cout << "exact match" << std::endl;
             _locationIndex = i;
             return (true);
         }
+        else if ((_request._URI.find(tmp.c_str(), 0, tmp.size()) != std::string::npos) && (tmp.size()) > 1 && (tmp.find('/', (tmp.size() - 1)) != std::string::npos)) {  // NGINX LOCATION BLOCK FOR A DIRECTORY (PROBLEM OF AN ADDED LOCATION /)
+            _locationIndex = i;
+            return (true);
+        }
+        // else if (tmp == "/") { // NGINX LOCATION BLOCK FOR A DIRECTORY
+        //     std::cout << "general location match" << std::endl;
+        //     _locationIndex = i;
+        //     return (true);
+        // }
     }
     return (false);
 }
@@ -321,49 +342,80 @@ bool server::AllowedMthods(void) {
 
 std::string server::AppendRootAndUri(void) {
     std::string tmpURI;
-    std::string tmp;
     DIR *directory;
 
     tmpURI = (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot());
-    std::cout << "root path: " << tmpURI << std::endl;
-    
     tmpURI.append(_request._URI);
-    std::cout << "URI: " << tmpURI << std::endl;
+    std::cout << "complete URI: " << tmpURI << std::endl;
     
+    // CHECK THE RESOURCE REQUESTED IF IT IS A DIRECTORY
+    if ((directory = opendir(tmpURI.c_str())) != nullptr) { 
+        _isDirectory = true;
+    }
+    else {
+        _isDirectory = false;
+    }
+    closedir(directory);
+    // CHECK THE RESOURCE REQUESTED IF IT IS A FILE 
+    if (access(tmpURI.c_str(), F_OK | R_OK | W_OK ) == -1) {
+        std::cout << "error access path" << std::endl;
+        tmpURI.clear();
+        _isFile = false;
+    }
+    else {
+        _isFile = true;
+    }
+    return (tmpURI);
+}
     // NOW CHECK IF I HAVE AN INDEX FILE TO SERVE
     // IF NOT CHECK AUTOINDEX IS ON TO LIST CONTENT OF LOCATION DIRECTORY
     // IF AUTOINDEX IS OFF RESPONSE BY 403 FORBIDEN
     // IF NOTHING FOUND 404 NOT FOUND
 
-    std::cout << "number of files inside the location: " << _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size() << std::endl;
-    std::cout << "number of location: " << _locationIndex << std::endl;
-    
-    for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size(); i++)
-    {
-        std::cout << _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i] << std::endl;
-    }    
+void server::serveDirecotry(void) {
+    std::string tmp;
+    std::string dirName;
+    int         size;
+    DIR         *directory;
+    struct dirent *entry;
 
-    
-    if ((directory = opendir(tmpURI.c_str())) != nullptr) {
-        // tmp = tmpURI.substr((tmpURI.size() - 1), 1);
-        // if (tmp != "/") {
-        //     std::cout << "must redirect the folder" << std::endl;
-        //     _response.code = 301;
-        // }
+    tmp = _URI.substr((_URI.size() - 1), 1);
+    size =  _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
+    // URI DON'T HAVE A / IN THE END
+    if (tmp != "/") { 
+        std::cout << "must redirect the folder" << std::endl;
+        _response.code = 301;
+        return ;
     }
-
-    // CHECK THE RESOURCE REQUESTED IF IT IS A FILE OR DIRECTORY
-
-    if (access(tmpURI.c_str(), F_OK | R_OK | W_OK ) == -1) {
-        std::cout << "error access path" << std::endl;
-        tmpURI.clear();
+    // IF THE LOCATION HAVE INDEX FILES
+    if (size == 4) {
+        tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[3];
+        if (tmp == "index.nginx-debian.html") { // INDEX IN THE DEFAULT MODE SO CHECK FOR AUTOINDEX
+            std::cout << "autoindex on" << std::endl;
+            if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir()) { // IF AUATOINDEX ON
+                if ((directory = opendir(_URI.c_str())) != nullptr) {
+                    while ((entry = readdir(directory)) != NULL) {
+                        std::cout << entry->d_name << std::endl;
+                    }
+                    closedir(directory);
+                }
+            }
+        }
     }
+}
 
+void server::serveFile(void) {
 
-    return (tmpURI);
 }
 
 
+void server::createHtmlFile(std::string fName, std::string list) {
+    std::ofstream   file(fName);
+    std::srting     content;
 
+    content = "<!DOCTYPE html>\r\n<html>\r\n<head>\r\n<title>" + dirName + "</title>\r\n\
+	</head>\r\n<body>\r\n<h1>Webserv</h1>\r\n<p>\r\n";
+    
+}
 
 server::~server() {}
