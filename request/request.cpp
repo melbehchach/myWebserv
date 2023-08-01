@@ -10,7 +10,7 @@ void request::requestHeader(std::string& buffer) { // SAME FUNCTION FOR POST GET
     getRequestLine();
     getHeaders();
     _position = buffer.find(_headers);
-    if (_method == "POST" && _position != -1) {
+    if (_method == "POST" && _position != -1) { // because of of the body infos boundary.....
         _headersSize = _headers.size() + _position;
         _contentLength = _headersSize;
         buffer.erase(0, _headersSize);
@@ -41,18 +41,17 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
         _statusCode = 405;
         return (false);
     }
+    
     if (_URI.size() > 2048U) {
         _statusCode = 414;
         return (false);
     }
-    if (access(_URI.c_str(), F_OK | R_OK) != 0) {
-        _statusCode = 404;
-        return (false);
-    }
+    
     if (_http != "HTTP/1.1") {
         _statusCode = 505;
         return (false);
     }
+
     return (true);
 }
 
@@ -76,7 +75,7 @@ void request::getHeaders(void) {
         if (_key == "Connection:")
             _connection = _value;
         else if (_key == "Transfer-Encoding:")
-            _chunkedTransfer = true;
+            _chunkedTransfer = true; // COULD BE A BUG SHOULD DOUBLE CHECK
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value));
     }
 }

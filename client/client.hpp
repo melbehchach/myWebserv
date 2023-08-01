@@ -17,7 +17,7 @@ class client {
         std::string _port;
         std::string _host;
         std::string _hostname;
-        std::string _URI;
+        // std::string _URI;
         // std::string _method;
         int         _fd;
         bool        _startRecv;
@@ -30,11 +30,12 @@ class client {
         // bool        _stopSend;
 
         void setFd(int fd);
+        // void setServer(t_socketListner _server);
         void enableStartRecv(void);
         void disableStartRecv(void);
         void enableStartSend(void);
         void disableStartSend(void);
-        void clearBody(void);
+        
 
 
     client();

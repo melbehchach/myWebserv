@@ -20,6 +20,7 @@
 #include <cstdio>
 #include <ctime>
 #include <string.h>
+#include <dirent.h>
 // #include "./server/server.hpp"
 // #include "./request/request.hpp"
 // #include "./response/response.hpp"

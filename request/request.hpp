@@ -3,9 +3,8 @@
 #define REQUEST_HPP
 
 #include "../header.hpp"
-
 #include "../response/response.hpp"
-#include "../client/client.hpp"
+// #include "../client/client.hmpp"
 
 #define MAX_HEADER 8190
 

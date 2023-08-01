@@ -3,7 +3,7 @@
 #define RESPONSE_HPP
 
 #include "../header.hpp"
-#include "../request/request.hpp"
+// #include "../request/request.hpp"
 #include "../client/client.hpp"
 
 #define BUFFSIZE 16000
@@ -44,7 +44,7 @@ class response {
         std::string serverNameHeader(void);
         std::string dateHeader(void);
         std::string getHeaders(int size);
-        void postMethodResponse(client &_client);
+        void postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);
         void deleteMethodResponse(client &_client);
 

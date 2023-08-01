@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   TargetRequestParser.cpp                            :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: aabdou <aabdou@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/11/14 18:05:52 by aabdou            #+#    #+#             */
-/*   Updated: 2022/12/08 18:31:32 by aabdou           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "./headers/TargetRequestParser.hpp"
 
 // starting state transition handler, only accepts '/'

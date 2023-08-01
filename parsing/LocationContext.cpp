@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   LocationContext.cpp                                :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: aabdou <aabdou@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/11/14 16:48:55 by aabdou            #+#    #+#             */
-/*   Updated: 2022/12/19 22:07:45 by aabdou           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "./headers/LocationContext.hpp"
 
 LocationContext::LocationContext(std::string root) : ConfigValues(root),

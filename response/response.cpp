@@ -104,12 +104,15 @@ std::string response::getHeaders(int size) {
 bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_client._startSend) {
+        // std::cout << "respponse clinet number: " << _client._fd << std::endl;
         _client._responseBody = getHeaders(get_file_size());
-        _client._responseBody += readFile();
+        // std::cout << _client._responseBody << std::endl;
+        _client._responseBody.append(readFile());
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
     if (_client._responseBody.size() > 0) {
+        // std::cout << "sending response" << std::endl;
         _bytesCounter = _client._responseBody.size() / 10;     
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
@@ -117,10 +120,12 @@ bool response::getMethodResponse(client &_client) {
         if (_bytesSend < 0)
             std::cout << strerror(errno) << '\n';
         _client._responseBody.erase(0, _bytesSend);
+        // std::cout << _client._responseBody.size() << std::endl;
     }
     else if (_client._responseBody.size() == 0) {
         _client._responseBody.clear();
         _endSend = true;
+        // std::cout << "hello after end sendig" << std::endl;
     }
     return (_endSend);
 }
@@ -129,6 +134,7 @@ std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD:
 	std::ifstream 	file;
 	std::string     text;
 	std::ostringstream streambuff;
+
 	file.open(_path);
 	if (file.is_open()) {
 		streambuff << file.rdbuf();
@@ -140,11 +146,13 @@ std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD:
 
 int response::get_file_size(void) {
     std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
-    if (!_file.is_open()) {
-        std::cout << "path of error file: " << _path << std::endl;
+    int contentLength;
+    if (!_file.is_open())
+        contentLength = 0;
+    else {
+        std::streampos _fileSize = _file.tellg();
+        contentLength = static_cast<int>(_fileSize);
     }
-    std::streampos _fileSize = _file.tellg();
-    int contentLength = static_cast<int>(_fileSize);
     _file.close();
     return (contentLength);
 }
@@ -207,6 +215,8 @@ void response::errorMessage(int code) {
         _message = " Request Header Fields Too Large\r\n";
     else if (code == 451) 
         _message = " Unavailable For Legal Reasons\r\n";
+    else if (code == 301)
+        _message = " Moved Permanently\r\n";
     else if (code == 500) 
         _message = " Internal Server Error\r\n";
     else if (code == 501) 

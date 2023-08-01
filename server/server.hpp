@@ -5,13 +5,23 @@
 #include "../request/request.hpp"
 #include "../response/response.hpp"
 #include "../client/client.hpp"
+#include "../parsing/headers/ConfigFileParser.hpp"
+
+
 
 #define BUFFSIZE 16000
+
+
+
+typedef struct socketListner {
+    std::string _port;
+    std::string _host;
+    std::string _serverName;
+} t_socketListner;
 
 class server {
     private:
     // SERVER ATTRIBUTS
-        std::vector<int> listners;
         std::vector<struct pollfd>  pfds;
 
         struct addrinfo             hints;
@@ -23,10 +33,6 @@ class server {
         response                    _response;
         std::string                 _path;
         std::string                 _tmpBody;
-        // std::string                 _port;
-        // std::string                 _host;
-
-        // bool                        _startRecv;
         char                        _buffer[16000];
         int                         _socketFd;
         int                         _clinetFd;
@@ -34,7 +40,12 @@ class server {
         int                         _totalFds;
         int                         _totalFdsCheck;
         int                         _newClientFd;
+        int                         _serverIndex;
+        int                         _locationIndex;
+        ConfigFileParser const &    _configFile;
+        std::string                 _URI;
 
+    
     // SERVER METHODS
         bool                        serverGetaddrinfo(std::string &_port, std::string &_host);
         int                         serverSocket(void);
@@ -46,14 +57,22 @@ class server {
         void                        addFDescriptor(int fd);
         void                        serverReceive(int fd, int index);
         void                        serverSend(int fd, int index);
+        bool                        LocationAvilability(client & _client);
+        bool                        RedirectionAvilability(void);
+        bool                        AllowedMthods(void);
+        std::string                 AppendRootAndUri(void);
+
+    
 
     public:
 
         // 
         std::multimap<int, client>                  _clientsMap;
         std::multimap<int, client>::iterator        _mapIt;
+        std::multimap<int, socketListner>                  _listnersMap;
+        std::multimap<int, socketListner>::iterator        _listnersIt;
          
-        server(std::multimap<std::string, std::pair<std::string, std::string> >const & m);
+        server(std::multimap<std::string, std::pair<std::string, std::string> >const & m, ConfigFileParser const &);
         ~server();
 };
 

@@ -29,11 +29,8 @@ void client::disableStartSend(void) {
     _startSend = false;
 }
 
-// void client::clearBody(void) {
-//     if (_endRecv)
-//         _requestBody.clear();
-//     else if (_endSend)
-//         _responseBody.clear();
+// void client::setServer(t_socketListner _server) {
+
 // }
 
 client::~client() {}

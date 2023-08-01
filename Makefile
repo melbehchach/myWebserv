@@ -47,12 +47,6 @@ OBJ = $(SRC:.cpp=.o)
 
 all: $(NAME)
 
-# $(NAME): $(OBJ)
-# 	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
-
-# %.o: %.cpp
-# 	$(CC) $(CFLAGS) -c $< -o $@ -I $(HEADER)
-
 $(NAME) : $(OBJ)
 	$(CC) $(CFLAGS) $(OBJ) -o $(NAME)
 
@@ -69,3 +63,7 @@ re : fclean all
 
 
 #    -g -fsanitize=address,undefined,integer
+	# ./server.hpp \
+	# ./request.hpp \
+	# ./response.hpp \
+	# ./client.hpp \

@@ -1,15 +1,3 @@
-/* ************************************************************************** */
-/*                                                                            */
-/*                                                        :::      ::::::::   */
-/*   ConfigFileParser.cpp                               :+:      :+:    :+:   */
-/*                                                    +:+ +:+         +:+     */
-/*   By: aabdou <aabdou@student.42.fr>              +#+  +:+       +#+        */
-/*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2022/10/25 10:19:28 by aabdou            #+#    #+#             */
-/*   Updated: 2022/12/19 22:06:45 by aabdou           ###   ########.fr       */
-/*                                                                            */
-/* ************************************************************************** */
-
 #include "./headers/ConfigFileParser.hpp"
 
 ConfigFileParser::ConfigFileParser() : _FileName(""), _FileContent(""), _NumberOfServerContexts(0)
