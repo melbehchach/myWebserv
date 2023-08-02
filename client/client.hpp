@@ -22,6 +22,7 @@ class client {
         int         _fd;
         bool        _startRecv;
         bool        _startSend;
+        bool        _serveFile;
         // bool        _endRecv;
         // bool        _endSend;
         // int         _clientFd;
@@ -30,7 +31,6 @@ class client {
         // bool        _stopSend;
 
         void setFd(int fd);
-        // void setServer(t_socketListner _server);
         void enableStartRecv(void);
         void disableStartRecv(void);
         void enableStartSend(void);

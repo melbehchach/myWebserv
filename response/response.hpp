@@ -3,15 +3,12 @@
 #define RESPONSE_HPP
 
 #include "../header.hpp"
-// #include "../request/request.hpp"
 #include "../client/client.hpp"
 
 #define BUFFSIZE 16000
 class response {
 
     private:
-                    /*  METHPDS */
-        // client              _clientObj;
         std::string         _statusLine;
         std::string         _headers;
         std::string         _message;
@@ -25,13 +22,12 @@ class response {
         std::string         _tmpBody;
         int                 _bytesCounter;
         int                 _bytesSend;
-                    /*  ATTRIBUTS   */
 
     public:
         response();
         std::string         _path;
+        std::string         _locationContent;
         bool                _startSend;
-        bool                _continueSend;
         bool                _endSend;
         int code;
         
@@ -47,13 +43,11 @@ class response {
         void postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);
         void deleteMethodResponse(client &_client);
-
-        //  std::multimap<int, client> clientsToServ
-
         int get_file_size(void);
         std::string	readFile(void);
-        // std::string	readFile(void);
-        // void send_response(std::vector<struct pollfd>& fds, int index, std::string& body, std::string& path, int code);
+        void createHtmlFile(std::string fName);
+
+
         ~response();
 };
 

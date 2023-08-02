@@ -64,9 +64,9 @@ class server {
         bool                        AllowedMthods(void);
         std::string                 AppendRootAndUri(void);
         // FOR GET METHOD
-        void                        serveDirecotry(void);
+        void                        serveDirecotry(client &_client);
         void                        serveFile(void);
-        void                        createHtmlFile(std::string fName);
+        // void                        createHtmlFile(std::string fName, std::string list);
         // void                        destroyHtmlFile(void);
 
 

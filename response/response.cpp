@@ -14,8 +14,6 @@ std::string response::statusLine(void) {
 
 std::string response::contentLengthHeader(int size) {
     _contentLength = "Content-length: ";
-    if (code == 404)
-        size = 0;
     _contentLength += std::to_string(size);
     _contentLength += "\r\n";
     return (_contentLength);
@@ -104,9 +102,17 @@ std::string response::getHeaders(int size, client &_client) {
 bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_client._startSend) {
+        if (code != 200) {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+            createHtmlFile(_path);
+        }
+        else {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
+            createHtmlFile(_path);
+        }
         // std::cout << "respponse clinet number: " << _client._fd << std::endl;
         _client._responseBody = getHeaders(get_file_size(), _client);
-        // std::cout << _client._responseBody << std::endl;
+        std::cout << _client._responseBody << std::endl;
         _client._responseBody.append(readFile());
         _client.disableStartSend();
     }
@@ -147,6 +153,7 @@ std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD:
 int response::get_file_size(void) {
     std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
     int contentLength;
+
     if (!_file.is_open())
         contentLength = 0;
     else {
@@ -157,6 +164,43 @@ int response::get_file_size(void) {
     return (contentLength);
 }
 
+
+void response::createHtmlFile(std::string fName) {
+    std::ofstream   file(fName);
+    std::string     content;
+    std::stringstream ss;
+    std::string errorCode;
+
+    ss << code;
+    ss >> errorCode;
+    
+    if (!file.is_open()){
+        std::cerr << "Failed to create the file: " << fName << std::endl;
+        return;
+    }
+
+    errorMessage(code);
+
+    content = "<!DOCTYPE html>\n";
+    content += "<html>\n";
+    content += "<body>\n";
+    if (code == 200)
+        content += _locationContent;
+    else {
+        content += "<h1>Error page : ";
+        content += errorCode;
+        content += "</h1>\n";
+        content += " <h2> ";
+        content += _message.substr(0, (_message.size() - 2));
+        content += " </h2>\n";
+    }
+    content += "</body>\n";
+    content += "</html>\n";
+
+    file << content;
+    file.close();
+    
+}
 
 void response::errorMessage(int code) {
     if (code == 200)
