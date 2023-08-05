@@ -3,12 +3,8 @@
 #define CLIENT_HPP
 
 #include "../header.hpp"
-// #include "../server/server.hpp"
-// #include "../request/request.hpp"
-// #include "../response/response.hpp"
 
 class client {
-
     private:
 
     public:
@@ -17,27 +13,23 @@ class client {
         std::string _port;
         std::string _host;
         std::string _hostname;
-        // std::string _URI;
-        // std::string _method;
+        // std::string _uri;
         int         _fd;
         bool        _startRecv;
         bool        _startSend;
+        bool        _endSend;
         bool        _serveFile;
-        // bool        _endRecv;
-        // bool        _endSend;
-        // int         _clientFd;
-        // int         _bytesCounter;  // for the response when serving a file 
-        // int         _bytesSend; // for the response when serving a file
-        // bool        _stopSend;
+        bool        _autoIndex;
+        bool        _isIndexFile;
+        bool        _defaultIndexFiles;
 
         void setFd(int fd);
         void enableStartRecv(void);
         void disableStartRecv(void);
         void enableStartSend(void);
         void disableStartSend(void);
+        void resetAttributs(void);
         
-
-
     client();
     ~client();
 };

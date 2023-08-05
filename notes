@@ -1,0 +1,9 @@
+Request :
+
+    1- Check if the location exist => * by loking for an exact match 
+                                      * having the name of location at the start of the URI
+                                      *
+    
+
+/Users/mel-behc/Desktop/content
+/content/test

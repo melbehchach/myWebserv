@@ -32,8 +32,8 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
             _method = tmp.substr(0, pos);
         else if (i == 1)
             _URI = tmp.substr(0, pos);
-        else 
-            _http = tmp.substr(0, (tmp.size() - 1));
+        else
+            _http = tmp.substr(0, tmp.size() == 0 ? 0 : (tmp.size() - 1));
         if (pos != -1) 
             tmp.erase(0, (pos + 1));
     }
@@ -41,13 +41,11 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
         _statusCode = 405;
         return (false);
     }
-    
     if (_URI.size() > 2048U) {
         _statusCode = 414;
         return (false);
     }
-    
-    if (_http != "HTTP/1.1") {
+    if (_http.size() == 0 || _http != "HTTP/1.1") {
         _statusCode = 505;
         return (false);
     }
@@ -79,7 +77,6 @@ void request::getHeaders(void) {
         _msgrequest.insert( std::pair<std::string, std::string>(_key, _value));
     }
 }
-
 
 
 /*         POST METHOD PARSING REQUEST         */
@@ -135,7 +132,7 @@ void request::erasePostRequestHeaders(client &_client) {
 void    request::postMethod(client &_client) {
     // std::cout << "file upload in progress..." << std::endl;
     _position1 = _client._requestBody.find(_boundary);
-    if (_position1 != -1) { // in case i find another boundary "body infos" means another body exists
+    if (_position1 != -1) { // in case another boundary "body infos" means another body exists
         if(_chunkedTransfer)
             chunkedPostRequestBody(_client._requestBody);
         else {

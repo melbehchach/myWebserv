@@ -21,6 +21,7 @@
 #include <ctime>
 #include <string.h>
 #include <dirent.h>
+#include <signal.h>
 // #include "./server/server.hpp"
 // #include "./request/request.hpp"
 // #include "./response/response.hpp"

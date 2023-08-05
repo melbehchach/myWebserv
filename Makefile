@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -std=c++98 -Wall -Werror -Wextra 
+CFLAGS = -std=c++98 -Wall -Werror -Wextra -g -fsanitize=address,undefined,integer
 NAME = webserv
 HEADER = header.hpp\
 	./parsing/headers/CheckMethods.hpp \
@@ -62,7 +62,7 @@ fclean: clean
 re : fclean all
 
 
-#    -g -fsanitize=address,undefined,integer
+#    
 	# ./server.hpp \
 	# ./request.hpp \
 	# ./response.hpp \

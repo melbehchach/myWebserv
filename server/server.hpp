@@ -31,7 +31,7 @@ class server {
         socklen_t                   _clientaddrln;
         request                     _request;
         response                    _response;
-        std::string                 _path;
+        std::string                 _URI;
         std::string                 _tmpBody;
         char                        _buffer[16000];
         int                         _socketFd;
@@ -43,8 +43,6 @@ class server {
         int                         _serverIndex;
         int                         _locationIndex;
         ConfigFileParser const &    _configFile;
-        std::string                 _URI;
-        bool                        _isFile;
         bool                        _isDirectory;
 
     
@@ -59,15 +57,17 @@ class server {
         void                        addFDescriptor(int fd);
         void                        serverReceive(int fd, int index);
         void                        serverSend(int fd, int index);
-        bool                        LocationAvilability(client & _client);
+        void                        getCurrentServer(client &_client);
+        
+        // FIRST CHECK
+        bool                        LocationAvilability(void);
         bool                        RedirectionAvilability(void);
-        bool                        AllowedMthods(void);
+        bool                        AllowedMethods(void);
+        // SECOND CHECK
+        void                        getResourceType(void);
         std::string                 AppendRootAndUri(void);
-        // FOR GET METHOD
+        void                        UriAvilability(client &_client);
         void                        serveDirecotry(client &_client);
-        void                        serveFile(void);
-        // void                        createHtmlFile(std::string fName, std::string list);
-        // void                        destroyHtmlFile(void);
 
 
     

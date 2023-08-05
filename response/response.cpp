@@ -53,6 +53,13 @@ std::string response::contentTypeHeader(void) {
     return (_contentType);
 }
 
+std::string response::location(void) {
+    _location = "Location: ";
+    _location += _path;
+    _location += "\r\n";
+    return (_location);
+}
+
                 /*                      DELETE METHOD RESPONSE                      */
 
 void response::deleteMethodResponse(client &_client) {
@@ -95,6 +102,10 @@ std::string response::getHeaders(int size, client &_client) {
     _headers += contentTypeHeader();
     _headers += contentLengthHeader(size);
     _headers += connexionHeader();
+    if (code == 301) {
+        std::cout << "redirect client" << std::endl;
+        _headers += location();
+    }
     _headers += "\r\n";
     return (_headers);
 }
@@ -102,17 +113,18 @@ std::string response::getHeaders(int size, client &_client) {
 bool response::getMethodResponse(client &_client) {
     _endSend = false;
     if (_client._startSend) {
-        if (code != 200) {
+        // std::cout << "responding code: " << << std::endl;
+        if (code != 200 && code != 301) {
             _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
         }
-        else {
+        else if (_client._autoIndex && code != 301) {
+            std::cout << "about listing a directory" << std::endl;
             _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
-        // std::cout << "respponse clinet number: " << _client._fd << std::endl;
         _client._responseBody = getHeaders(get_file_size(), _client);
-        std::cout << _client._responseBody << std::endl;
+        // std::cout << _client._responseBody << std::endl;
         _client._responseBody.append(readFile());
         _client.disableStartSend();
     }
@@ -124,14 +136,19 @@ bool response::getMethodResponse(client &_client) {
             _bytesCounter = _client._responseBody.size();
         _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
         if (_bytesSend < 0)
-            std::cout << strerror(errno) << '\n';
+            std::cerr << strerror(errno) << '\n';
         _client._responseBody.erase(0, _bytesSend);
+        _client._endSend = true;
         // std::cout << _client._responseBody.size() << std::endl;
     }
     else if (_client._responseBody.size() == 0) {
-        _client._responseBody.clear();
-        _endSend = true;
-        // std::cout << "hello after end sendig" << std::endl;
+        if (_client._endSend) {
+            _client._responseBody.clear();
+            _endSend = true;
+            // std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
+            _client._endSend = false;
+            _client.resetAttributs();
+        }
     }
     return (_endSend);
 }
@@ -166,25 +183,22 @@ int response::get_file_size(void) {
 
 
 void response::createHtmlFile(std::string fName) {
-    std::ofstream   file(fName);
-    std::string     content;
-    std::stringstream ss;
-    std::string errorCode;
+    std::ofstream       file(fName);
+    std::stringstream   ss;
+    std::string         content;
+    std::string         errorCode;
 
     ss << code;
     ss >> errorCode;
-    
     if (!file.is_open()){
         std::cerr << "Failed to create the file: " << fName << std::endl;
         return;
     }
-
     errorMessage(code);
-
     content = "<!DOCTYPE html>\n";
     content += "<html>\n";
     content += "<body>\n";
-    if (code == 200)
+    if (code == 200 || code == 301)
         content += _locationContent;
     else {
         content += "<h1>Error page : ";
@@ -196,7 +210,6 @@ void response::createHtmlFile(std::string fName) {
     }
     content += "</body>\n";
     content += "</html>\n";
-
     file << content;
     file.close();
     

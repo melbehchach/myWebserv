@@ -6,6 +6,7 @@
 
 int main(int ac, char **av)
 {
+    // signal(SIG_IGN, SIGPIPE);
     ConfigFileParser configParser;
     configParser.ParseFile(ac, av);
     std::multimap<std::string, std::pair<std::string, std::string> > serverMap;

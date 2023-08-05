@@ -18,6 +18,7 @@ class response {
         std::string         _type;
         std::string         _date;
         std::string         _serverName;
+        std::string         _location;
         std::string         _body;
         std::string         _tmpBody;
         int                 _bytesCounter;
@@ -39,6 +40,7 @@ class response {
         std::string connexionHeader(void);
         std::string serverNameHeader(client &_client);
         std::string dateHeader(void);
+        std::string location(void);
         std::string getHeaders(int size, client &_client);
         void postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);

@@ -1,9 +1,14 @@
 #include "client.hpp"
 
 client::client() {
-    // Set of attributs
+    // _startRecv = false;
+    // _startSend = false;
+    // _endSend = false;
+    // _serveFile = false;
+    // _autoIndex = false;
+    // _isIndexFile = false;
+    // _defaultIndexFiles = false;
 }
-
 
 void client::setFd(int fd) {
     _fd = fd;
@@ -29,8 +34,8 @@ void client::disableStartSend(void) {
     _startSend = false;
 }
 
-// void client::setServer(t_socketListner _server) {
-
-// }
-
+void client::resetAttributs(void) {
+    _requestBody.clear();
+    _responseBody.clear();
+}
 client::~client() {}
