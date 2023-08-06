@@ -1,31 +1,37 @@
 #include "server.hpp"
 
-bool server::serverGetaddrinfo(std::string &_port, std::string &_host) {
+bool server::serverGetaddrinfo(std::string &_port, std::string &_host)
+{
 	// void for the moment after that i must pass the result of the parser <multimap>
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_flags = AI_PASSIVE;
 	hints.ai_socktype = SOCK_STREAM;
-	if ((getaddrinfo(_host.c_str(), _port.c_str(), &hints, &result)) < 0) {
-		std::cerr <<  gai_strerror(errno);
+	if ((getaddrinfo(_host.c_str(), _port.c_str(), &hints, &result)) < 0)
+	{
+		std::cerr << gai_strerror(errno);
 		return (false);
 	}
 	return (true);
 }
 
-int server::serverSocket(void) {
+int server::serverSocket(void)
+{
 	_socketFd = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
-	if (_socketFd < 0) {
+	if (_socketFd < 0)
+	{
 		std::cerr << strerror(errno);
-		exit (1);
+		exit(1);
 	}
 	// listners.push_back(_socketFd);
 	return (_socketFd);
 }
 
-bool server::serverSetsocket(void) {
+bool server::serverSetsocket(void)
+{
 	int setsock = 1;
-	if ((setsockopt(_socketFd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock))) < 0) {
+	if ((setsockopt(_socketFd, SOL_SOCKET, SO_REUSEADDR, (char *)&setsock, sizeof(setsock))) < 0)
+	{
 		std::cerr << strerror(errno);
 		return (false);
 	}
@@ -33,48 +39,58 @@ bool server::serverSetsocket(void) {
 	return (true);
 }
 
-bool server::serverBind(void) {
-	if ((bind(_socketFd, result->ai_addr, result->ai_addrlen)) < 0) {
+bool server::serverBind(void)
+{
+	if ((bind(_socketFd, result->ai_addr, result->ai_addrlen)) < 0)
+	{
 		std::cerr << strerror(errno);
 		return (false);
 	}
 	return (true);
 }
 
-bool server::serverListen(void) {
-	if ((listen(_socketFd, SOMAXCONN)) < 0) {
+bool server::serverListen(void)
+{
+	if ((listen(_socketFd, SOMAXCONN)) < 0)
+	{
 		std::cerr << strerror(errno);
 		return (false);
 	}
 	return (true);
 }
 
-int server::serverPoll(void) {
+int server::serverPoll(void)
+{
 	_totalFds = poll(&pfds[0], pfds.size(), -1);
-	if (_totalFds < 0) {
+	if (_totalFds < 0)
+	{
 		std::cerr << strerror(errno);
 	}
 	return (_totalFds);
 }
 
-int server::serverAccept(int fd) {
+int server::serverAccept(int fd)
+{
 	_clientaddrln = sizeof(_client);
-	_clinetFd = accept(fd, (struct sockaddr*)&_client, &_clientaddrln);
+	_clinetFd = accept(fd, (struct sockaddr *)&_client, &_clientaddrln);
 	fcntl(_clinetFd, F_SETFL, O_NONBLOCK); //  to check the non blocking after tests
-	if (_clinetFd < 0) {
+	if (_clinetFd < 0)
+	{
 		if (errno == EWOULDBLOCK || errno == EAGAIN)
 			std::cerr << strerror(errno) << " error \n";
-		else {
+		else
+		{
 
 			std::cerr << strerror(errno) << "hamid \n";
 		}
 	}
-	else 
+	else
 		addFDescriptor(_clinetFd); // fill the pfds vector
 	return (_clinetFd);
 }
 
-void server::addFDescriptor(int fd) {
+void server::addFDescriptor(int fd)
+{
 	pollfds.fd = fd;
 	if (pollfds.fd == _socketFd)
 		pollfds.events = POLLIN | POLLHUP;
@@ -83,62 +99,72 @@ void server::addFDescriptor(int fd) {
 	pfds.push_back(pollfds);
 }
 
-server::server(std::multimap<std::string, std::pair<std::string, std::string> >const & m, ConfigFileParser const & _File) :_configFile(_File)  {	
-	for (std::multimap<std::string, std::pair<std::string, std::string> >::const_iterator it = m.begin() ; it != m.end(); it++) {
-	
+server::server(std::multimap<std::string, std::pair<std::string, std::string> > const &m, ConfigFileParser const &_File) : _configFile(_File)
+{
+	for (std::multimap<std::string, std::pair<std::string, std::string> >::const_iterator it = m.begin(); it != m.end(); it++)
+	{
+
 		t_socketListner sock;
 
 		sock._host = it->second.first;
 		sock._port = it->first;
 		sock._serverName = it->second.second;
-		
+
 		if (!serverGetaddrinfo(sock._port, sock._host))
 			exit(1);
 		if (!serverSocket())
 			exit(1);
-		if (!serverSetsocket()) 
+		if (!serverSetsocket())
 			exit(1);
 		if (!serverBind()) // in case of error must close the listner
 			exit(1);
-		freeaddrinfo(result); 
-		if(!serverListen())
+		freeaddrinfo(result);
+		if (!serverListen())
 			exit(1);
 		addFDescriptor(_socketFd);
 
-		_listnersMap.insert( std::pair<int, t_socketListner>(_socketFd, sock) );
-	}
-	
-	for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++) {
+		_listnersMap.insert(std::pair<int, t_socketListner>(_socketFd, sock));
 	}
 
-	while (1) {
+	for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++)
+	{
+	}
+
+	while (1)
+	{
 		_totalFdsCheck = serverPoll();
 		if (_totalFdsCheck < 0)
-			break ; // poll call failed
-		for (size_t i = 0; i < pfds.size(); i++) {
-			if (pfds[i].revents & POLLIN) {
-				if (i < _listnersMap.size()) {
-					for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++) { // serch for the sokcet that contains event
-						if (pfds[i].fd == _listnersIt->first) { // Creation of a new client
+			break; // poll call failed
+		for (size_t i = 0; i < pfds.size(); i++)
+		{
+			if (pfds[i].revents & POLLIN)
+			{
+				if (i < _listnersMap.size())
+				{
+					for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++)
+					{ // serch for the sokcet that contains event
+						if (pfds[i].fd == _listnersIt->first)
+						{ // Creation of a new client
 							std::cout << "new client" << std::endl;
-							client _clientObj; 
-							_newClientFd = serverAccept(pfds[i].fd);   // Listening descriptor is readable.
+							client _clientObj;
+							_newClientFd = serverAccept(pfds[i].fd); // Listening descriptor is readable.
 							_clientObj.setFd(_newClientFd);
 							_clientObj.enableStartRecv();
 							_clientObj._port = _listnersIt->second._port;
 							_clientObj._host = _listnersIt->second._host;
 							_clientObj._hostname = _listnersIt->second._serverName;
-							_clientsMap.insert( std::pair<int, client>(_newClientFd, _clientObj) );
+							_clientsMap.insert(std::pair<int, client>(_newClientFd, _clientObj));
 							break;
 						}
-
 					}
 				}
-				else {
+				else
+				{
 					serverReceive(pfds[i].fd, i); // check event for receive
 				}
 			}
-			else if (pfds[i].revents & POLLOUT) { // check event for send
+			else if (pfds[i].revents & POLLOUT)
+			{ // check event for send
 				serverSend(pfds[i].fd, i);
 			}
 			else if (pfds[i].revents & POLLHUP)
@@ -147,22 +173,26 @@ server::server(std::multimap<std::string, std::pair<std::string, std::string> >c
 	}
 }
 
-void server::serverReceive(int fd, int index) {
+void server::serverReceive(int fd, int index)
+{
 	_mapIt = _clientsMap.find(fd);
-	if (_mapIt != _clientsMap.end()) {
-		
+	if (_mapIt != _clientsMap.end())
+	{
+
 		memset(_buffer, 0, BUFFSIZE);
 		_bytesRecv = recv(_mapIt->second._fd, _buffer, BUFFSIZE, 0);
-		if (_bytesRecv < 0) {
+		if (_bytesRecv < 0)
+		{
 			close(fd);
-			pfds.erase(pfds.begin() + index);  
+			pfds.erase(pfds.begin() + index);
 			_clientsMap.erase(_mapIt);
-			return ;
+			return;
 		}
-		else 
+		else
 			std::cout << "number of bytes read: " << _bytesRecv << std::endl;
 		_mapIt->second._requestBody.append(_buffer, _bytesRecv);
-		if (_mapIt->second._startRecv) { // stor headers in a multi-map and erase them from the body
+		if (_mapIt->second._startRecv)
+		{ // stor headers in a multi-map and erase them from the body
 			std::cout << _mapIt->second._requestBody << std::endl;
 			_request.requestHeader(_mapIt->second._requestBody);
 			_response.code = 200;
@@ -171,28 +201,30 @@ void server::serverReceive(int fd, int index) {
 			_firstResourceCheck = true;
 			_mapIt->second.disableStartRecv();
 			if (_request._method == "POST")
-			    _request.erasePostRequestHeaders(_mapIt->second);
+				_request.erasePostRequestHeaders(_mapIt->second);
 
 			// GET CURENT SERVER
 			getCurrentServer(_mapIt->second);
 
 			// GET LOCATION
-			if(!LocationAvilability()) {
+			if (!LocationAvilability())
+			{
 				std::cout << "location not found" << std::endl;
 				_response.code = 404;
 				_mapIt->second.enableStartSend();
 				return;
-
 			}
 			// IS LOCATION HAVE A RETURN REDIRECTION
-			else if (!RedirectionAvilability()) {
+			else if (!RedirectionAvilability())
+			{
 				std::cout << "redirecti zmer" << std::endl;
 				_response.code = 301;
 				_mapIt->second.enableStartSend();
 				return;
 			}
 			// METHODS ALLOWED IN LOCATION
-			else if (!AllowedMethods()) {
+			else if (!AllowedMethods())
+			{
 				std::cout << "ma method ma pikala" << std::endl;
 				_response.code = 405;
 				_mapIt->second.enableStartSend();
@@ -200,71 +232,80 @@ void server::serverReceive(int fd, int index) {
 			}
 		}
 
-		if (_response.code == 200) {
+		if (_response.code == 200)
+		{
 			std::cout << "sending content" << std::endl;
-			if (_request._method == "POST") {
+			if (_request._method == "POST")
+			{
 				// GET RESOURCE TYPE
 				if (_firstResourceCheck)
 					getResourceType(_mapIt->second);
 				// IT'S A DIRECTORY
 				// if (_isDirectory) {
-					// IF LOCATION HAS INDEX FILES
-						// IF LOCATION HAS CGI
-							// RUN CGI ON POST METHOD
-						// ELSE
-							// RETURN 403
-					// ELSE 
-						// RETURN 403 FORBIDEN
+				// IF LOCATION HAS INDEX FILES
+				// IF LOCATION HAS CGI
+				// RUN CGI ON POST METHOD
+				// ELSE
+				// RETURN 403
+				// ELSE
+				// RETURN 403 FORBIDEN
 				// }
 				// else {
-					// IF LOCATION HAS INDEX FILES
-						// IF LOCATION HAS CGI
-							// RUN CGI
-						// ELSE
-							// UPLOAD FILE RETURN 201
-						_request.postMethod(_mapIt->second);
+				// IF LOCATION HAS INDEX FILES
+				// IF LOCATION HAS CGI
+				// RUN CGI
+				// ELSE
+				// UPLOAD FILE RETURN 201
+				_request.postMethod(_mapIt->second);
 				// }
 			}
-			else {
+			else
+			{
 				// SERVE NOW THE CONTENT DEPEND ON THE REQUEST METHOD AND THE ALLOWED ONE ON LOCATION
-				if (_request._method == "GET") { 
+				if (_request._method == "GET")
+				{
 					// GET RESOURCE TYPE
 					getResourceType(_mapIt->second);
 					// IT'S A DIRECTORY
-					if (_isDirectory) {
+					if (_isDirectory)
+					{
 						// CHECK FIRST IF INDEX FILES EXISTS
 						if (IndexExist())
-							ServeIndexFile();
+							ServeIndexFile(_mapIt->second);
 						else
 							serveDirecotry(_mapIt->second);
 					}
-					else {
+					else
+					{
 						// IF LOCATION HAS CGI
-							// RUN IT
+						// RUN IT
 						// ELSE
-							// SERVE FILE
+						// SERVE FILE
 						if (_response.code != 404 && _response.code != 405)
 							UriAvilability();
 					}
 				}
-				else if (_request._method == "DELETE") {
+				else if (_request._method == "DELETE")
+				{
 					// GET RESOURCE TYPE
 					getResourceType(_mapIt->second);
 					// IT'S A DIRECTORY
-					if (_isDirectory) {
+					if (_isDirectory)
+					{
 						// IF LOCATION HAS CGI
-							// IF LOCATION HAS INDEX FILES
-								// RUN CGI ON DELETE METHOD
-							// ELSE
-								// RETURN 403 FORBIDEN
+						// IF LOCATION HAS INDEX FILES
+						// RUN CGI ON DELETE METHOD
+						// ELSE
+						// RETURN 403 FORBIDEN
 						// ELSE
 						std::cout << _response._path << std::endl;
-							deleteLocation();
+						deleteLocation();
 					}
 					// IT'S A FILE
-					else {
+					else
+					{
 						// IF LOCATION HAS CGI
-							// RUN CGI ON DELETE METHOD
+						// RUN CGI ON DELETE METHOD
 						// ELSE
 						deleteFile();
 					}
@@ -275,12 +316,16 @@ void server::serverReceive(int fd, int index) {
 	}
 }
 
-void server::getCurrentServer(client &_client) {
+void server::getCurrentServer(client &_client)
+{
 	_serverIndex = -1;
 	std::cout << _client._port << std::endl;
-	for (size_t i = 0; i < _configFile.GetNumberOfServers(); i++) { // GET THE SERVER
-		for (size_t j = 0; j < _configFile.GetServers()[i].GetPortNumbers().size(); j++) {
-			if (_client._port == _configFile.GetServers()[i].GetPortNumbers()[j]){
+	for (size_t i = 0; i < _configFile.GetNumberOfServers(); i++)
+	{ // GET THE SERVER
+		for (size_t j = 0; j < _configFile.GetServers()[i].GetPortNumbers().size(); j++)
+		{
+			if (_client._port == _configFile.GetServers()[i].GetPortNumbers()[j])
+			{
 				_serverIndex = i;
 				break;
 			}
@@ -290,15 +335,18 @@ void server::getCurrentServer(client &_client) {
 	}
 }
 
-bool server::LocationAvilability(void) {
+bool server::LocationAvilability(void)
+{
 	std::string tmp;
-	int         position;
+	int position;
 
 	position = -1;
 	_locationIndex = -1;
-	for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++) {
+	for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++)
+	{
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri();
-		if (((position = _URI.find(tmp, 0)) == 0) && tmp.size() > 1) {
+		if (((position = _URI.find(tmp, 0)) == 0) && tmp.size() > 1)
+		{
 			_locationIndex = i;
 			return (true);
 		}
@@ -306,11 +354,13 @@ bool server::LocationAvilability(void) {
 	return (false);
 }
 
-bool server::RedirectionAvilability(void) {
+bool server::RedirectionAvilability(void)
+{
 	std::string returnUri;
 
 	returnUri = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
-	if (returnUri.size() > 0) {
+	if (returnUri.size() > 0)
+	{
 		std::cout << "redirection url exist" << std::endl;
 		_response._path = returnUri;
 		return (false);
@@ -318,32 +368,37 @@ bool server::RedirectionAvilability(void) {
 	return (true);
 }
 
-bool server::AllowedMethods(void) {
+bool server::AllowedMethods(void)
+{
 
-	if (_request._method == "GET") {
+	if (_request._method == "GET")
+	{
 		std::cout << "GET is there" << std::endl;
-		if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetMethods().GetGET()) {
-			return(true);
+		if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetMethods().GetGET())
+		{
+			return (true);
 		}
 	}
-	
-	else if (_request._method == "POST") {
+
+	else if (_request._method == "POST")
+	{
 		std::cout << "POST is there" << std::endl;
 		if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetMethods().GetPost())
 			return (true);
 	}
-	
 
-	else if (_request._method == "DELETE") {
+	else if (_request._method == "DELETE")
+	{
 		std::cout << "DELETE is there" << std::endl;
 		if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetMethods().GetDelete())
-			return(true);
+			return (true);
 	}
 
 	return (false);
 }
 
-void server::getResourceType(client &_client) {
+void server::getResourceType(client &_client)
+{
 	std::string tmpURI;
 	DIR *directory;
 
@@ -352,17 +407,23 @@ void server::getResourceType(client &_client) {
 	else
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot().size();
 	std::cout << "the path to the folder be in" << tmpURI << std::endl;
-	if (tmpURI.size() > 0) {
-		tmpURI.append(_URI);
+	if (tmpURI.size() > 0)
+	{
+		if (_URI.find('?') == std::string::npos)
+			tmpURI.append(_URI);
+		else
+			tmpURI.append(_URI.substr(0, _URI.find('?')));
 		std::cout << tmpURI << std::endl;
-		if ((directory = opendir(tmpURI.c_str())) != nullptr) { // CHECK THE RESOURCE REQUESTED IF IT IS AN AVILABLE DIRECTORY
+		if ((directory = opendir(tmpURI.c_str())) != nullptr)
+		{ // CHECK THE RESOURCE REQUESTED IF IT IS AN AVILABLE DIRECTORY
 			std::cout << "it's a folder" << std::endl;
 			_isDirectory = true;
 			_pathForDelete = tmpURI;
 			_client._uploadPath = tmpURI;
 			closedir(directory);
 		}
-		else {
+		else
+		{
 			std::cout << "it's not a folder" << std::endl;
 			_isDirectory = false;
 			_response._path = tmpURI;
@@ -371,7 +432,8 @@ void server::getResourceType(client &_client) {
 	_firstResourceCheck = false;
 }
 
-std::string server::AppendRootAndUri(void) {
+std::string server::AppendRootAndUri(void)
+{
 	std::string tmpURI;
 
 	tmpURI = (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot());
@@ -381,15 +443,16 @@ std::string server::AppendRootAndUri(void) {
 	return (tmpURI);
 }
 
-
-bool server::IndexExist(void) {
+bool server::IndexExist(void)
+{
 	std::string tmp;
 	std::string root;
-	size_t      size;
-	
+	size_t size;
+
 	_IndexFiles = true;
-	size =  _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
-	if (size == 4) { 
+	size = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
+	if (size == 4)
+	{
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[3];
 		// INDEX IN THE DEFAULT MODE SO CHECK FOR AUTOINDEX
 		if (tmp == "index.nginx-debian.html")
@@ -398,183 +461,233 @@ bool server::IndexExist(void) {
 	return (_IndexFiles);
 }
 
-void server::ServeIndexFile(void) {
+void server::ServeIndexFile(client &_client)
+{
 	std::string tmp;
 	std::string root;
-	size_t      size;
+	size_t 		size;
 
-	
-	// IF CGI EXIST 
-		// RUN CGI
-
-	// ELSE SERVER FIRST INDEX FILE
-	size =  _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
+	size = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
 	root = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
-	for (size_t i = 0; i < size; i++) {
-		tmp = root;
-		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
-			_URI.append("/");
-		tmp.append(_URI);
-		tmp.append(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i]);
-		std::cout << tmp << std::endl;
-		if (access(tmp.c_str(), F_OK | R_OK | W_OK ) == -1) {
-			std::cout << "error access path" << std::endl;
-			_response.code = 404;
+	// IF CGI EXIST
+	// RUN CGI
+	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0)
+	{
+		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
+			_configFile.GetServers()[_serverIndex],
+				this->_request);
+			std::ostringstream ss;
+		try {
+			CGI cgi(input, _client._port);
+			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
+			// std::cout << "\n\n=====\n" << cgi.GetOutput() << "\n=====\n\n";
 		}
-		else {
-			_response.code = 200;
-			_response._path = tmp;
-			break ;
+		catch (std::exception const & e) {
+			std::cout << e.what() << "\n";
+		}
+		_client._cgiOn = true;
+		_client._responseBody.append(ss.str());
+	}
+	// ELSE SERVER FIRST INDEX FILE
+	else {
+		for (size_t i = 0; i < size; i++)
+		{
+			tmp = root;
+			if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
+				_URI.append("/");
+			tmp.append(_URI);
+			tmp.append(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i]);
+			std::cout << tmp << std::endl;
+
+			if (access(tmp.c_str(), F_OK | R_OK | W_OK) == -1)
+			{
+				std::cout << "error access path" << std::endl;
+				_response.code = 404;
+			}
+			else
+			{
+				_response.code = 200;
+				_response._path = tmp;
+				break;
+			}
 		}
 	}
 }
 
-void server::serveDirecotry(client &_client) {
-	std::string		tmp;
-	std::string		root;
-	DIR				*directory;
-	struct dirent	*entry;
+void server::serveDirecotry(client &_client)
+{
+	std::string tmp;
+	std::string root;
+	DIR *directory;
+	struct dirent *entry;
 
 	root = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
 	// IF AUATOINDEX ON
-	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir()) {
-			std::string listFile;
-			
-			tmp = root;
-			tmp.append(_URI);
-			if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
-				_URI.append("/");
+	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir())
+	{
+		std::string listFile;
 
-			std::cout << "autoindex on" << std::endl;
-			std::cout << "current path: " << tmp << std::endl;
+		tmp = root;
+		tmp.append(_URI);
+		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
+			_URI.append("/");
 
-			if ((directory = opendir(tmp.c_str())) != nullptr) {
-				_response._locationContent.clear();
-				while ((entry = readdir(directory)) != NULL) {
-					std::cout << entry->d_name << std::endl;
-					listFile = "<p> <a style=\"color:red;\"";
-					listFile += "href=\"http://";
-					listFile += _client._hostname;
-					listFile += ":";
-					listFile += _client._port;
-					listFile += _URI;
-					listFile += entry->d_name;
-					listFile += "\">";
-					listFile += entry->d_name;
-					listFile += "</a></p>\n";
-					_response._locationContent += listFile;
-				}
-				listFile.clear();
-				closedir(directory);
-				_client._autoIndexOn = true;
+		std::cout << "autoindex on" << std::endl;
+		std::cout << "current path: " << tmp << std::endl;
+
+		if ((directory = opendir(tmp.c_str())) != nullptr)
+		{
+			_response._locationContent.clear();
+			while ((entry = readdir(directory)) != NULL)
+			{
+				std::cout << entry->d_name << std::endl;
+				listFile = "<p> <a style=\"color:red;\"";
+				listFile += "href=\"http://";
+				listFile += _client._hostname;
+				listFile += ":";
+				listFile += _client._port;
+				listFile += _URI;
+				listFile += entry->d_name;
+				listFile += "\">";
+				listFile += entry->d_name;
+				listFile += "</a></p>\n";
+				_response._locationContent += listFile;
 			}
+			listFile.clear();
+			closedir(directory);
+			_client._autoIndexOn = true;
+		}
 	}
 	// IF AUTOINDEX OFF
-	else if (!_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir()) {
+	else if (!_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir())
+	{
 		std::cout << "autoindex off" << std::endl;
 		_response.code = 403;
 	}
 }
 
-void server::UriAvilability(void) {
-	if (_response.code == 301) {
+void server::UriAvilability(void)
+{
+	if (_response.code == 301)
+	{
 		_response._path = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
 		std::cout << _response._path << std::endl;
-		return ;
+		return;
 	}
-	if (access(_response._path.c_str(), F_OK | R_OK | W_OK ) == -1) {
+	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
+	{
 		std::cout << "error access path" << std::endl;
 		_response.code = 404;
 	}
 }
 
-
-void server::deleteFile(void) {
-	if (access(_response._path.c_str(), F_OK | R_OK | W_OK ) == -1)
+void server::deleteFile(void)
+{
+	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
 		_response.code = 500;
-	else {
+	else
+	{
 		if (std::remove(_response._path.c_str()) == 0)
 			_response.code = 204;
 		else
 			_response.code = 500;
 	}
-
 }
 
-int server::deleteDirectoryContent(std::string const path) {
-	DIR* dir;
-    dirent* entry;
+int server::deleteDirectoryContent(std::string const path)
+{
+	DIR *dir;
+	dirent *entry;
 	std::string filePath;
 
 	dir = opendir(path.c_str());
-    if (!dir) {
+	if (!dir)
+	{
 		std::cout << "couldn't open: " << path << std::endl;
-        return (500);
-    }
+		return (500);
+	}
 
-    while ((entry = readdir(dir)) != NULL) {
-        // SKIP . AND ..
-        if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        filePath = path + "/" + entry->d_name;
-		if (access(_response._path.c_str(), F_OK | R_OK | W_OK ) == -1)
+	while ((entry = readdir(dir)) != NULL)
+	{
+		// SKIP . AND ..
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+		{
+			continue;
+		}
+		filePath = path + "/" + entry->d_name;
+		if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
 			_response.code = 500;
-		else {
+		else
+		{
 			struct stat fileStat;
-			if (lstat(filePath.c_str(), &fileStat) == -1) {
+			if (lstat(filePath.c_str(), &fileStat) == -1)
+			{
 				return (500);
 				continue;
 			}
-			if (S_ISDIR(fileStat.st_mode)) {
+			if (S_ISDIR(fileStat.st_mode))
+			{
 				// RECURSEVILEY DELETE FILES
 				deleteDirectoryContent(filePath);
-			} else {
+			}
+			else
+			{
 				std::remove(filePath.c_str());
 			}
 		}
-    }
-    closedir(dir);
+	}
+	closedir(dir);
 
 	return (deleteSubDirectories(path));
 }
 
-int server::deleteSubDirectories(std::string const path) {
-	DIR* dir;
-	dirent* entry;
+int server::deleteSubDirectories(std::string const path)
+{
+	DIR *dir;
+	dirent *entry;
 	std::string filePath;
 
 	dir = opendir(path.c_str());
-    if (!dir) {
+	if (!dir)
+	{
 		std::cout << "couldn't open: " << path << std::endl;
-        return (500);
-    }
-	while ((entry = readdir(dir)) != NULL) {
-		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        filePath = path + "/" + entry->d_name;
-		if (rmdir(filePath.c_str()) != 0) {
-        	return (500);
-    	}
+		return (500);
+	}
+	while ((entry = readdir(dir)) != NULL)
+	{
+		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+		{
+			continue;
+		}
+		filePath = path + "/" + entry->d_name;
+		if (rmdir(filePath.c_str()) != 0)
+		{
+			return (500);
+		}
 	}
 	return (204);
 }
 
-void server::deleteLocation(void) {
+void server::deleteLocation(void)
+{
 	int ret;
 
 	ret = deleteDirectoryContent(_pathForDelete);
 	_response.code = ret;
 }
 
-void server::serverSend(int fd, int index) {
+void server::serverSend(int fd, int index)
+{
 	_mapIt = _clientsMap.find(fd);
-	if (_mapIt != _clientsMap.end()) {
+	if (_mapIt != _clientsMap.end())
+	{
 
-		if (_request._method == "GET") {
-			if (_response.getMethodResponse(_mapIt->second)) {
-				if (_request._connection == "close\r") {
+		if (_request._method == "GET")
+		{
+			if (_response.getMethodResponse(_mapIt->second))
+			{
+				if (_request._connection == "close\r")
+				{
 					close(_mapIt->second._fd);
 					pfds.erase(pfds.begin() + index);
 					_clientsMap.erase(_mapIt);
@@ -585,29 +698,83 @@ void server::serverSend(int fd, int index) {
 				_URI.clear();
 			}
 		}
-		else if (_request._method == "DELETE") {
-		    _response.deleteMethodResponse(_mapIt->second);
-		    if (_request._connection == "close\r") {
-		        close(_mapIt->second._fd);
-		        pfds.erase(pfds.begin() + index);
-		        _clientsMap.erase(_mapIt);
-		    }
-		    else
+		else if (_request._method == "DELETE")
+		{
+			_response.deleteMethodResponse(_mapIt->second);
+			if (_request._connection == "close\r")
+			{
+				close(_mapIt->second._fd);
+				pfds.erase(pfds.begin() + index);
+				_clientsMap.erase(_mapIt);
+			}
+			else
 				_mapIt->second.enableStartRecv();
 			_request._method.clear();
 			_URI.clear();
 		}
-		else if ((_request._method == "POST") && _mapIt->second._startSend) {
-		    _response.postMethodResponse(_mapIt->second);
-		    if (_request._connection != "keep-alive\r") {
-		        close(_mapIt->second._fd);
-		        pfds.erase(pfds.begin() + index);
-		        _clientsMap.erase(_mapIt);
-		    }
-		    _mapIt->second.enableStartRecv();
+		else if ((_request._method == "POST") && _mapIt->second._startSend)
+		{
+			_response.postMethodResponse(_mapIt->second);
+			if (_request._connection != "keep-alive\r")
+			{
+				close(_mapIt->second._fd);
+				pfds.erase(pfds.begin() + index);
+				_clientsMap.erase(_mapIt);
+			}
+			_mapIt->second.enableStartRecv();
 		}
-
 	}
 }
 
 server::~server() {}
+
+
+void server::parseCgiOutput(std::string &input, std::ostringstream &header, std::string const &ex) {
+	std::istringstream s(input);
+	std::string buff;
+	time_t raw;
+	std::string tm;
+	time(&raw);
+	tm = ctime(&raw);
+	tm.pop_back();
+	std::string body;
+	std::string connection = this->_request._msgrequest.find("Connection") !=  this->_request._msgrequest.end() ? this->_request._msgrequest.find("Connection")->second : "close";
+	header << "HTTP/1.1" << " " << this->_response.code << " " << this->_response.statusLine() << "\r\n" << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
+	if (ex.compare(".php") == 0) {
+		while (std::getline(s, buff)) {
+			if (buff.find("X-Powered-By:") != std::string::npos) {
+				header << "X-Powered-By: "  << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.find("Set-Cookie:") != std::string::npos){
+				header << "Set-Cookie: " <<  buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.find("Expires:") != std::string::npos){
+				header << "Expires: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.find("Cache-Control:") != std::string::npos) {
+				header << "Cache-Control: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.find("Pragma:") != std::string::npos) {
+				header << "Pragma: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.find("Content-type:") != std::string::npos) {
+				header << "Content-type: " <<  buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+			}
+			else if (buff.compare("\r\n\r\n") == 0)
+				break;
+		}
+		body = input.substr(input.find("\r\n\r\n") + 4);
+	}
+	else if (ex.compare(".py") == 0) {
+		while (std::getline(s, buff))
+		{
+			if (buff.find("Content-type:") != std::string::npos)
+				header << "Content-type: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
+		}
+		body = input.substr(input.find("\n\n") + 1);
+	}
+	header << "Content-Length: " + std::to_string(input.size());
+	header << "\r\n\r\n";
+	header << body;
+}
+

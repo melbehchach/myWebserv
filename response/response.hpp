@@ -31,7 +31,7 @@ class response {
         bool                _startSend;
         bool                _endSend;
         int code;
-        
+
         void errorMessage(int code);
         void contentType(const std::string& file);
         std::string statusLine(void);
@@ -49,7 +49,6 @@ class response {
         int get_file_size(void);
         std::string	readFile(void);
         void createHtmlFile(std::string fName);
-
 
         ~response();
 };

@@ -7,11 +7,10 @@
 // #include "../client/client.hmpp"
 
 #define MAX_HEADER 8190
-
 class request {
 
     private:
-        
+
 
         std::stringstream                   _message;
         std::string                         _http;
@@ -28,7 +27,7 @@ class request {
         std::vector<std::string>                            _chunksVector;
         std::vector<std::string>                            _chunkSizeVector;
         std::string                         _method;
-        std::string                         _URI;
+        std::string                         _URI; // includes file name
         std::string                         _boundary;
         std::string                         _finaleBoundary;
         std::string                         _connection;
@@ -47,7 +46,7 @@ class request {
         int                                 _position;
         int                                 _position1;
         int                                 _position2;
-        
+
 
         request();
         void                                requestHeader(std::string& buffer);
@@ -58,7 +57,7 @@ class request {
         void                                normalPostRequestBody(std::string &buffer, int boundaryPosition, client &_client);
         void                                chunkedPostRequestBody(std::string &buffer, client &_client);
         std::vector<std::string>            ft_split(const std::string &str, const std::string &del);
-            
+
         // GET REQUEST METHODS
 
 

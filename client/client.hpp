@@ -21,6 +21,7 @@ class client {
         bool        _endSend;
         bool        _serveFile;
         bool        _autoIndexOn;
+        bool        _cgiOn;
 
         void setFd(int fd);
         void enableStartRecv(void);
@@ -28,7 +29,7 @@ class client {
         void enableStartSend(void);
         void disableStartSend(void);
         void resetAttributs(void);
-        
+
     client();
     ~client();
 };

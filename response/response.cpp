@@ -1,10 +1,11 @@
 #include "response.hpp"
 
-response::response() {
-
+response::response()
+{
 }
 
-std::string response::statusLine(void) {
+std::string response::statusLine(void)
+{
     errorMessage(code);
     _statusLine = "HTTP/1.1 ";
     _statusLine += std::to_string(code);
@@ -12,28 +13,32 @@ std::string response::statusLine(void) {
     return (_statusLine);
 }
 
-std::string response::contentLengthHeader(int size) {
+std::string response::contentLengthHeader(int size)
+{
     _contentLength = "Content-length: ";
     _contentLength += std::to_string(size);
     _contentLength += "\r\n";
     return (_contentLength);
 }
 
-std::string response::connexionHeader(void) {
+std::string response::connexionHeader(void)
+{
     _connexion = "Connexion: ";
     _connexion += "keep-alive";
     _connexion += "\r\n";
     return (_connexion);
 }
 
-std::string response::serverNameHeader(client &_client) {
+std::string response::serverNameHeader(client &_client)
+{
     _serverName = "server: ";
     _serverName += _client._hostname;
     _serverName += "\r\n";
     return (_serverName);
 }
 
-std::string response::dateHeader(void) {
+std::string response::dateHeader(void)
+{
     // Get the current system time
     std::time_t currentTime = std::time(NULL);
     // Convert the time_t object to a string
@@ -46,27 +51,31 @@ std::string response::dateHeader(void) {
     return (_date);
 }
 
-std::string response::contentTypeHeader(void) {
+std::string response::contentTypeHeader(void)
+{
     _contentType = "Content-type: ";
     _contentType += _type;
     _contentType += "\r\n";
     return (_contentType);
 }
 
-std::string response::location(void) {
+std::string response::location(void)
+{
     _location = "Location: ";
     _location += _path;
     _location += "\r\n";
     return (_location);
 }
 
-                /*                      DELETE METHOD RESPONSE                      */
+/*                      DELETE METHOD RESPONSE                      */
 
-std::string response::deleteHeaders(int size, client &_client) {
+std::string response::deleteHeaders(int size, client &_client)
+{
     _headers = statusLine();
     _headers += serverNameHeader(_client);
     _headers += dateHeader();
-    if (code != 200 && code != 204) {
+    if (code != 200 && code != 204)
+    {
         contentType(_path);
         _headers += contentTypeHeader();
     }
@@ -78,26 +87,31 @@ std::string response::deleteHeaders(int size, client &_client) {
     return (_headers);
 }
 
-bool response::deleteMethodResponse(client &_client) {
+bool response::deleteMethodResponse(client &_client)
+{
     _endSend = false;
-    if (_client._startSend) {
+    if (_client._startSend)
+    {
         // std::cout << "responding code: " << << std::endl;
-        if (code != 200 && code != 204) {
-            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+        if (code != 200 && code != 204)
+        {
+            _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
             _client._responseBody = deleteHeaders(get_file_size(), _client);
             _client._responseBody.append(readFile());
         }
-        else {
+        else
+        {
             _client._responseBody = deleteHeaders(0, _client);
         }
         std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
-    if (_client._responseBody.size() > 0) {
+    if (_client._responseBody.size() > 0)
+    {
         // std::cout << "sending response" << std::endl;
-        _bytesCounter = _client._responseBody.size() / 10;     
+        _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
         _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
@@ -106,8 +120,10 @@ bool response::deleteMethodResponse(client &_client) {
         _client._responseBody.erase(0, _bytesSend);
         _client._endSend = true;
     }
-    else if (_client._responseBody.size() == 0) {
-        if (_client._endSend) {
+    else if (_client._responseBody.size() == 0)
+    {
+        if (_client._endSend)
+        {
             _client._responseBody.clear();
             _endSend = true;
             std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
@@ -118,9 +134,9 @@ bool response::deleteMethodResponse(client &_client) {
     return (_endSend);
 }
 
-
-                /*                      POST METHOD RESPONSE                      */
-void response::postMethodResponse(client &_client) {
+/*                      POST METHOD RESPONSE                      */
+void response::postMethodResponse(client &_client)
+{
     int counter = 0;
 
     _headers = statusLine();
@@ -134,11 +150,11 @@ void response::postMethodResponse(client &_client) {
         std::cout << strerror(errno) << '\n';
     _client.disableStartSend();
     _client.resetAttributs();
-
 }
 
-                /*                      GET METHOD RESPONSE                      */
-std::string response::getHeaders(int size, client &_client) {
+/*                      GET METHOD RESPONSE                      */
+std::string response::getHeaders(int size, client &_client)
+{
     contentType(_path);
     _headers = statusLine();
     _headers += serverNameHeader(_client);
@@ -146,7 +162,8 @@ std::string response::getHeaders(int size, client &_client) {
     _headers += contentTypeHeader();
     _headers += contentLengthHeader(size);
     _headers += connexionHeader();
-    if (code == 301) {
+    if (code == 301)
+    {
         std::cout << "redirect client" << std::endl;
         _headers += location();
     }
@@ -154,28 +171,38 @@ std::string response::getHeaders(int size, client &_client) {
     return (_headers);
 }
 
-bool response::getMethodResponse(client &_client) {
+bool response::getMethodResponse(client &_client)
+{
     std::cout << "time to response" << std::endl;
     _endSend = false;
-    if (_client._startSend) {
-        if (code != 200 && code != 301) {
-            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+    if (_client._startSend)
+    {
+        if (code != 200 && code != 301)
+        {
+            _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
         }
-        else if (_client._autoIndexOn && code != 301) {
+        else if (_client._autoIndexOn && code != 301)
+        {
             std::cout << "HALLAOUI HABIB GALBI" << std::endl;
-            _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
+            _path = "/Users/aabdou/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
-        _client._responseBody = getHeaders(get_file_size(), _client);
-        std::cout << _client._responseBody << std::endl;
-        _client._responseBody.append(readFile());
+        if (!_client._cgiOn) {
+            _client._responseBody = getHeaders(get_file_size(), _client);
+            std::cout << _client._responseBody << std::endl;
+            _client._responseBody.append(readFile());
+        }
+        else {
+
+        }
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
-    if (_client._responseBody.size() > 0) {
+    if (_client._responseBody.size() > 0)
+    {
         // std::cout << "sending response" << std::endl;
-        _bytesCounter = _client._responseBody.size() / 10;     
+        _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
         _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
@@ -185,8 +212,10 @@ bool response::getMethodResponse(client &_client) {
         _client._endSend = true;
         // std::cout << _client._responseBody.size() << std::endl;
     }
-    else if (_client._responseBody.size() == 0) {
-        if (_client._endSend) {
+    else if (_client._responseBody.size() == 0)
+    {
+        if (_client._endSend)
+        {
             _client._responseBody.clear();
             _endSend = true;
             // std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
@@ -197,27 +226,31 @@ bool response::getMethodResponse(client &_client) {
     return (_endSend);
 }
 
-std::string	response::readFile(void) { // RETURN THE CONTENT OF A FILE AS A STD::STRING
-	std::ifstream 	file;
-	std::string     text;
-	std::ostringstream streambuff;
+std::string response::readFile(void)
+{ // RETURN THE CONTENT OF A FILE AS A STD::STRING
+    std::ifstream file;
+    std::string text;
+    std::ostringstream streambuff;
 
-	file.open(_path);
-	if (file.is_open()) {
-		streambuff << file.rdbuf();
-		text = streambuff.str();
-	}
-	file.close();
-	return text;
+    file.open(_path);
+    if (file.is_open())
+    {
+        streambuff << file.rdbuf();
+        text = streambuff.str();
+    }
+    file.close();
+    return text;
 }
 
-int response::get_file_size(void) {
+int response::get_file_size(void)
+{
     std::ifstream _file(_path, std::ios::in | std::ios::binary | std::ios::ate);
     int contentLength;
 
     if (!_file.is_open())
         contentLength = 0;
-    else {
+    else
+    {
         std::streampos _fileSize = _file.tellg();
         contentLength = static_cast<int>(_fileSize);
     }
@@ -225,16 +258,17 @@ int response::get_file_size(void) {
     return (contentLength);
 }
 
-
-void response::createHtmlFile(std::string fName) {
-    std::ofstream       file(fName);
-    std::stringstream   ss;
-    std::string         content;
-    std::string         errorCode;
+void response::createHtmlFile(std::string fName)
+{
+    std::ofstream file(fName);
+    std::stringstream ss;
+    std::string content;
+    std::string errorCode;
 
     ss << code;
     ss >> errorCode;
-    if (!file.is_open()){
+    if (!file.is_open())
+    {
         std::cerr << "Failed to create the file: " << fName << std::endl;
         return;
     }
@@ -244,7 +278,8 @@ void response::createHtmlFile(std::string fName) {
     content += "<body>\n";
     if (code == 200 || code == 301)
         content += _locationContent;
-    else {
+    else
+    {
         content += "<h1>Error page : ";
         content += errorCode;
         content += "</h1>\n";
@@ -256,109 +291,112 @@ void response::createHtmlFile(std::string fName) {
     content += "</html>\n";
     file << content;
     file.close();
-    
 }
 
-void response::errorMessage(int code) {
+void response::errorMessage(int code)
+{
     if (code == 200)
         _message = " ok\r\n";
     else if (code == 204)
         _message = " No Content\r\n";
-    else if (code == 400) 
+    else if (code == 400)
         _message = " Bad Request\r\n";
-    else if (code == 401) 
+    else if (code == 401)
         _message = " Unauthorized\r\n";
-    else if (code == 402) 
+    else if (code == 402)
         _message = " Payment Required\r\n";
-    else if (code == 404) 
+    else if (code == 404)
         _message = " Not Found\r\n";
-    else if (code == 405) 
+    else if (code == 405)
         _message = " Method Not Allowed\r\n";
-    else if (code == 403) 
+    else if (code == 403)
         _message = " Forbidden\r\n";
-    else if (code == 406) 
+    else if (code == 406)
         _message = " Not Acceptable\r\n";
-    else if (code == 407) 
+    else if (code == 407)
         _message = " Proxy Authentication Required\r\n";
-    else if (code == 408) 
+    else if (code == 408)
         _message = " Request Timeout\r\n";
-    else if (code == 409) 
+    else if (code == 409)
         _message = " Conflict\r\n";
-    else if (code == 410) 
+    else if (code == 410)
         _message = " Gone\r\n";
-    else if (code == 411) 
+    else if (code == 411)
         _message = " Length Required\r\n";
-    else if (code == 412) 
+    else if (code == 412)
         _message = " Precondition Failed\r\n";
-    else if (code == 413) 
+    else if (code == 413)
         _message = " Payload Too Large\r\n";
-    else if (code == 414) 
+    else if (code == 414)
         _message = " URI Too Long\r\n";
-    else if (code == 415) 
+    else if (code == 415)
         _message = " Unsupported Media Type\r\n";
-    else if (code == 416) 
+    else if (code == 416)
         _message = " Range Not Satisfiable\r\n";
-    else if (code == 417) 
+    else if (code == 417)
         _message = " Expectation Failed\r\n";
-    else if (code == 422) 
+    else if (code == 422)
         _message = " Unprocessable Entity\r\n";
-    else if (code == 423) 
+    else if (code == 423)
         _message = " Locked\r\n";
-    else if (code == 424) 
+    else if (code == 424)
         _message = " Failed Dependency\r\n";
-    else if (code == 425) 
+    else if (code == 425)
         _message = " Too Early\r\n";
-    else if (code == 426) 
+    else if (code == 426)
         _message = " Upgrade Required\r\n";
-    else if (code == 428) 
+    else if (code == 428)
         _message = " Precondition Required\r\n";
-    else if (code == 429) 
+    else if (code == 429)
         _message = " Too Many Requests\r\n";
-    else if (code == 431) 
+    else if (code == 431)
         _message = " Request Header Fields Too Large\r\n";
-    else if (code == 451) 
+    else if (code == 451)
         _message = " Unavailable For Legal Reasons\r\n";
     else if (code == 301)
         _message = " Moved Permanently\r\n";
-    else if (code == 500) 
+    else if (code == 500)
         _message = " Internal Server Error\r\n";
-    else if (code == 501) 
+    else if (code == 501)
         _message = " Not Implemented\r\n";
-    else if (code == 502) 
+    else if (code == 502)
         _message = " Bad Gateway\r\n";
-    else if (code == 503) 
+    else if (code == 503)
         _message = " Service Unavailable\r\n";
-    else if (code == 504) 
+    else if (code == 504)
         _message = " Gateway Timeout\r\n";
-    else if (code == 505) 
+    else if (code == 505)
         _message = " HTTP Version Not Supported\r\n";
-    else if (code == 506) 
+    else if (code == 506)
         _message = " Variant Also Negotiates\r\n";
-    else if (code == 507) 
+    else if (code == 507)
         _message = " Insufficient Storage\r\n";
-    else if (code == 508) 
+    else if (code == 508)
         _message = " Loop Detected\r\n";
-    else if (code == 510) 
+    else if (code == 510)
         _message = " Not Extended\r\n";
-    else if (code == 511) 
+    else if (code == 511)
         _message = " Network Authentication Required\r\n";
-    else {
+    else
+    {
         code = 404;
         _message = " Not Found\r\n";
     }
 }
 
-void response::contentType(const std::string& _path) {
-    if (_path.rfind('.') != std::string::npos) {
+void response::contentType(const std::string &_path)
+{
+    if (_path.rfind('.') != std::string::npos)
+    {
         std::string ext = _path.substr(_path.rfind('.'), _path.size());
         if (ext == ".html")
             _type = "text/html";
         else if (ext == ".js")
-            _type = "application/javascript"; 
+            _type = "application/javascript";
         else if (ext == ".css")
-            _type = "text/css"; 
+            _type = "text/css";
         else if (ext == ".ico")
-            _type = "image/x-icon"; 
+            _type = "image/x-icon";
         else if (ext == ".jpeg" || ext == ".jpg")
             _type = "image/jpeg";
         else if (ext == ".png")

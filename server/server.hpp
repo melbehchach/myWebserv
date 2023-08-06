@@ -2,11 +2,14 @@
 #define SERVER_HPP
 
 #include "../header.hpp"
+#include <sstream>
 #include "../request/request.hpp"
 #include "../response/response.hpp"
 #include "../client/client.hpp"
 #include "../parsing/headers/ConfigFileParser.hpp"
-
+#include "../parsing/headers/ServerContext.hpp"
+#include "../parsing/headers/LocationContext.hpp"
+#include "../cgi/headers/CGI.hpp"
 
 
 #define BUFFSIZE 16000
@@ -48,7 +51,7 @@ class server {
         std::string                 _pathForDelete;
         bool                        _firstResourceCheck;
 
-    
+
     // SERVER METHODS
         bool                        serverGetaddrinfo(std::string &_port, std::string &_host);
         int                         serverSocket(void);
@@ -61,7 +64,7 @@ class server {
         void                        serverReceive(int fd, int index);
         void                        serverSend(int fd, int index);
         void                        getCurrentServer(client &_client);
-        
+
         // FIRST CHECK
         bool                        LocationAvilability(void);
         bool                        RedirectionAvilability(void);
@@ -74,7 +77,7 @@ class server {
 
 
         bool                        IndexExist(void);
-        void                        ServeIndexFile(void);
+        void                        ServeIndexFile(client &_client);
 
 
         // DELETE METHOD
@@ -82,18 +85,20 @@ class server {
         void                        deleteLocation(void);
         int                         deleteDirectoryContent(std::string const path);
         int                         deleteSubDirectories(std::string const path);
-    
+
 
     public:
 
-        // 
+        //
         std::multimap<int, client>                  _clientsMap;
         std::multimap<int, client>::iterator        _mapIt;
         std::multimap<int, socketListner>                  _listnersMap;
         std::multimap<int, socketListner>::iterator        _listnersIt;
-         
+
         server(std::multimap<std::string, std::pair<std::string, std::string> >const & m, ConfigFileParser const &);
         ~server();
+        void parseCgiOutput(std::string &input, std::ostringstream &header, std::string const &ex);
+
 };
 
 #endif

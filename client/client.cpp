@@ -6,6 +6,7 @@ client::client() {
     _endSend = false;
     _serveFile = false;
     _autoIndexOn = false;
+    _cgiOn = false;
 }
 
 void client::setFd(int fd) {

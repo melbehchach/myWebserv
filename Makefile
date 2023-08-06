@@ -2,6 +2,10 @@ CC = c++
 CFLAGS = -std=c++98 -Wall -Werror -Wextra -g -fsanitize=address,undefined,integer
 NAME = webserv
 HEADER = header.hpp\
+	./server/server.hpp \
+	./request/request.hpp \
+	./response/response.hpp \
+	./client/client.hpp \
 	./parsing/headers/CheckMethods.hpp \
 	./parsing/headers/ClientMaxBodySize.hpp \
 	./parsing/headers/ConfigFileParser.hpp\
@@ -18,7 +22,8 @@ HEADER = header.hpp\
 	./parsing/headers/TargetRequestParser.hpp \
 	./parsing/headers/Uri.hpp \
 	./parsing/headers/UriParser.hpp \
-	./parsing/headers/utils.hpp
+	./parsing/headers/utils.hpp \
+	./cgi/headers/CGI.hpp
 
 SRC = ./main.cpp \
 	./server/server.cpp \
@@ -41,7 +46,9 @@ SRC = ./main.cpp \
 	./parsing/TargetRequestParser.cpp \
 	./parsing/Uri.cpp \
 	./parsing/UriParser.cpp \
-	./parsing/utils.cpp
+	./parsing/utils.cpp \
+	./cgi/CGI.cpp
+
 
 OBJ = $(SRC:.cpp=.o)
 
@@ -62,8 +69,8 @@ fclean: clean
 re : fclean all
 
 
-#    
-	# ./server.hpp \
-	# ./request.hpp \
-	# ./response.hpp \
-	# ./client.hpp \
+#
+# ./server.hpp \
+# ./request.hpp \
+# ./response.hpp \
+# ./client.hpp \
