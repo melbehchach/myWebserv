@@ -22,8 +22,9 @@ typedef struct socketListner {
 class server {
     private:
     // SERVER ATTRIBUTS
-        std::vector<struct pollfd>  pfds;
 
+        ConfigFileParser const &    _configFile;
+        std::vector<struct pollfd>  pfds;
         struct addrinfo             hints;
         struct addrinfo             *result;
         struct sockaddr_in          _client;
@@ -42,8 +43,10 @@ class server {
         int                         _newClientFd;
         int                         _serverIndex;
         int                         _locationIndex;
-        ConfigFileParser const &    _configFile;
         bool                        _isDirectory;
+        bool                        _IndexFiles;
+        std::string                 _pathForDelete;
+        bool                        _firstResourceCheck;
 
     
     // SERVER METHODS
@@ -64,12 +67,21 @@ class server {
         bool                        RedirectionAvilability(void);
         bool                        AllowedMethods(void);
         // SECOND CHECK
-        void                        getResourceType(void);
+        void                        getResourceType(client &_client);
         std::string                 AppendRootAndUri(void);
-        void                        UriAvilability(client &_client);
+        void                        UriAvilability(void);
         void                        serveDirecotry(client &_client);
 
 
+        bool                        IndexExist(void);
+        void                        ServeIndexFile(void);
+
+
+        // DELETE METHOD
+        void                        deleteFile(void);
+        void                        deleteLocation(void);
+        int                         deleteDirectoryContent(std::string const path);
+        int                         deleteSubDirectories(std::string const path);
     
 
     public:

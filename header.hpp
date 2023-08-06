@@ -22,6 +22,7 @@
 #include <string.h>
 #include <dirent.h>
 #include <signal.h>
+#include <sys/stat.h>
 // #include "./server/server.hpp"
 // #include "./request/request.hpp"
 // #include "./response/response.hpp"

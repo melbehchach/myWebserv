@@ -13,15 +13,14 @@ class client {
         std::string _port;
         std::string _host;
         std::string _hostname;
-        // std::string _uri;
+        std::string _method;
+        std::string _uploadPath;
         int         _fd;
         bool        _startRecv;
         bool        _startSend;
         bool        _endSend;
         bool        _serveFile;
-        bool        _autoIndex;
-        bool        _isIndexFile;
-        bool        _defaultIndexFiles;
+        bool        _autoIndexOn;
 
         void setFd(int fd);
         void enableStartRecv(void);

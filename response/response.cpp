@@ -62,20 +62,62 @@ std::string response::location(void) {
 
                 /*                      DELETE METHOD RESPONSE                      */
 
-void response::deleteMethodResponse(client &_client) {
-    int counter = 0;
-
+std::string response::deleteHeaders(int size, client &_client) {
     _headers = statusLine();
-    _headers += connexionHeader();
     _headers += serverNameHeader(_client);
     _headers += dateHeader();
-    _headers += contentLengthHeader(0);
+    if (code != 200 && code != 204) {
+        contentType(_path);
+        _headers += contentTypeHeader();
+    }
+    else
+        size = 0;
+    _headers += contentLengthHeader(size);
+    _headers += connexionHeader();
     _headers += "\r\n";
-    counter = send(_client._fd, _headers.c_str(), _headers.size(), 0);
-    if (counter < 0)
-        std::cout << strerror(errno) << '\n';
-    _client.disableStartSend();
+    return (_headers);
 }
+
+bool response::deleteMethodResponse(client &_client) {
+    _endSend = false;
+    if (_client._startSend) {
+        // std::cout << "responding code: " << << std::endl;
+        if (code != 200 && code != 204) {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+            createHtmlFile(_path);
+            _client._responseBody = deleteHeaders(get_file_size(), _client);
+            _client._responseBody.append(readFile());
+        }
+        else {
+            _client._responseBody = deleteHeaders(0, _client);
+        }
+        std::cout << _client._responseBody << std::endl;
+        _client.disableStartSend();
+    }
+    // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
+    if (_client._responseBody.size() > 0) {
+        // std::cout << "sending response" << std::endl;
+        _bytesCounter = _client._responseBody.size() / 10;     
+        if (_client._responseBody.size() < BUFFSIZE)
+            _bytesCounter = _client._responseBody.size();
+        _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
+        if (_bytesSend < 0)
+            std::cerr << strerror(errno) << '\n';
+        _client._responseBody.erase(0, _bytesSend);
+        _client._endSend = true;
+    }
+    else if (_client._responseBody.size() == 0) {
+        if (_client._endSend) {
+            _client._responseBody.clear();
+            _endSend = true;
+            std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
+            _client._endSend = false;
+            _client.resetAttributs();
+        }
+    }
+    return (_endSend);
+}
+
 
                 /*                      POST METHOD RESPONSE                      */
 void response::postMethodResponse(client &_client) {
@@ -91,6 +133,8 @@ void response::postMethodResponse(client &_client) {
     if (counter < 0)
         std::cout << strerror(errno) << '\n';
     _client.disableStartSend();
+    _client.resetAttributs();
+
 }
 
                 /*                      GET METHOD RESPONSE                      */
@@ -111,20 +155,20 @@ std::string response::getHeaders(int size, client &_client) {
 }
 
 bool response::getMethodResponse(client &_client) {
+    std::cout << "time to response" << std::endl;
     _endSend = false;
     if (_client._startSend) {
-        // std::cout << "responding code: " << << std::endl;
         if (code != 200 && code != 301) {
             _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
         }
-        else if (_client._autoIndex && code != 301) {
-            std::cout << "about listing a directory" << std::endl;
+        else if (_client._autoIndexOn && code != 301) {
+            std::cout << "HALLAOUI HABIB GALBI" << std::endl;
             _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
         _client._responseBody = getHeaders(get_file_size(), _client);
-        // std::cout << _client._responseBody << std::endl;
+        std::cout << _client._responseBody << std::endl;
         _client._responseBody.append(readFile());
         _client.disableStartSend();
     }
@@ -218,6 +262,8 @@ void response::createHtmlFile(std::string fName) {
 void response::errorMessage(int code) {
     if (code == 200)
         _message = " ok\r\n";
+    else if (code == 204)
+        _message = " No Content\r\n";
     else if (code == 400) 
         _message = " Bad Request\r\n";
     else if (code == 401) 

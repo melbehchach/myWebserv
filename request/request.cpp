@@ -130,13 +130,13 @@ void request::erasePostRequestHeaders(client &_client) {
 }
 
 void    request::postMethod(client &_client) {
-    // std::cout << "file upload in progress..." << std::endl;
+    std::cout << "file upload in progress..." << std::endl;
     _position1 = _client._requestBody.find(_boundary);
     if (_position1 != -1) { // in case another boundary "body infos" means another body exists
         if(_chunkedTransfer)
-            chunkedPostRequestBody(_client._requestBody);
+            chunkedPostRequestBody(_client._requestBody, _client);
         else {
-            normalPostRequestBody(_client._requestBody, _position1);
+            normalPostRequestBody(_client._requestBody, _position1, _client);
         }
         _client._requestBody.erase(0, _position1);
         _multipleFiles = true;
@@ -148,9 +148,9 @@ void    request::postMethod(client &_client) {
     if (_position2 != -1) { // End of receiving
         while ((_position1 = _client._requestBody.find(_boundary)) != -1) {
             if(_chunkedTransfer)
-                chunkedPostRequestBody(_client._requestBody);
+                chunkedPostRequestBody(_client._requestBody, _client);
             else
-                normalPostRequestBody(_client._requestBody, _position1);
+                normalPostRequestBody(_client._requestBody, _position1, _client);
             _client._requestBody.erase(0, _position1);
             _multipleFiles = true;
             erasePostRequestHeaders(_client);
@@ -158,23 +158,28 @@ void    request::postMethod(client &_client) {
         // SEND THE LAST _client._requestBody
         _position2 = _client._requestBody.find(_finaleBoundary); // update the postion in case we had lots of files
         if (_chunkedTransfer)
-            chunkedPostRequestBody(_client._requestBody);
+            chunkedPostRequestBody(_client._requestBody, _client);
         else 
-            normalPostRequestBody(_client._requestBody, _position2);
+            normalPostRequestBody(_client._requestBody, _position2, _client);
         _client._requestBody.clear();
         _client.enableStartSend();
         _msgrequest.clear();
     }
 }
 
-void    request::normalPostRequestBody(std::string &buffer, int boundary_Position) {
+void    request::normalPostRequestBody(std::string &buffer, int boundary_Position, client &_client) {
+    std::string fullPath;
+
     _position = buffer.find(_finaleBoundary);
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
     // std::cout << "size of file: " << _body.size() << std::endl;
-    // std::cout << "size of file: " << _filename << std::endl;
-    std::ofstream file(_filename);
+    fullPath = _client._uploadPath;
+    fullPath.append("/");
+    fullPath.append(_filename);
+    std::cout << "file name: " << fullPath << std::endl;
+    std::ofstream file(fullPath);
     if (file.is_open()) {
         file << _body;
         file.close();
@@ -182,7 +187,8 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
     _body.clear();
 }
 
-void    request::chunkedPostRequestBody(std::string &buffer) {  
+void    request::chunkedPostRequestBody(std::string &buffer, client &_client) {
+    std::string fullPath;
     _chunksVector = ft_split(buffer, "\r\n");
     for (size_t i = 0; i < _chunksVector.size(); i++) {
         if ((_chunksVector[i].size() > 0) && (_chunksVector[i].size() < 6)) {
@@ -205,7 +211,11 @@ void    request::chunkedPostRequestBody(std::string &buffer) {
             buffer.erase(_position, (_chunkSizeVector[i].size() + 2));
         }
     }
-    std::ofstream file(_filename);
+    fullPath = _client._uploadPath;
+    fullPath.append("/");
+    fullPath.append(_filename);
+    std::cout << "file name: " << fullPath << std::endl;
+    std::ofstream file(fullPath);
     if (file.is_open()) {
         file << _body;
         file.close();

@@ -1,13 +1,11 @@
 #include "client.hpp"
 
 client::client() {
-    // _startRecv = false;
-    // _startSend = false;
-    // _endSend = false;
-    // _serveFile = false;
-    // _autoIndex = false;
-    // _isIndexFile = false;
-    // _defaultIndexFiles = false;
+    _startRecv = false;
+    _startSend = false;
+    _endSend = false;
+    _serveFile = false;
+    _autoIndexOn = false;
 }
 
 void client::setFd(int fd) {
@@ -37,5 +35,12 @@ void client::disableStartSend(void) {
 void client::resetAttributs(void) {
     _requestBody.clear();
     _responseBody.clear();
+    _method.clear();
+    _uploadPath.clear();
+    _startRecv = false;
+    _startSend = false;
+    _endSend = false;
+    _serveFile = false;
+    _autoIndexOn = false;
 }
 client::~client() {}

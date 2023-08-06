@@ -42,9 +42,10 @@ class response {
         std::string dateHeader(void);
         std::string location(void);
         std::string getHeaders(int size, client &_client);
+        std::string deleteHeaders(int size, client &_client);
         void postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);
-        void deleteMethodResponse(client &_client);
+        bool deleteMethodResponse(client &_client);
         int get_file_size(void);
         std::string	readFile(void);
         void createHtmlFile(std::string fName);

@@ -1,9 +1,128 @@
-Request :
+about the allowed METHODS
 
-    1- Check if the location exist => * by loking for an exact match 
-                                      * having the name of location at the start of the URI
-                                      *
-    
 
-/Users/mel-behc/Desktop/content
-/content/test
+
+if i have a GET request ==> i should check if the location support this method
+
+    so if (GET true in this location the request should be processed)
+
+
+GET METHOD : 
+
+    GET RESOURCE TYPE 
+    IF LOCATION END WITH / AND URI NO {
+        RETURN 404 NOT FOUND 
+    }
+
+    IF DIRECTORY {
+        IF DIRECTORY HAS AN INDEX FILES{
+            IF LOCATION HAVE CGI {
+                RUN CGI
+            }
+            ELSE {
+                SERVER FIRTS INDEX FILE
+                IF IT EXISTS {
+                    SERVE IT 200
+                }
+                ELSE {
+                    404 NOT FOUND
+                }
+            }
+        }
+        ELSE {
+            IF AUTOINDEX IS ON {
+                LIST DIRECTORY CONTENT
+            }
+            ELSE {
+                RETURN 403 FORBIDEN
+            }
+        }
+    }
+    ELSE {
+        IF LOCATION HAVE CGI {
+            RUN CGI
+        }
+        ELSE {
+            SERVER REQUESTED FILE
+            IF IT EXISTS {
+                SERVE IT 200
+            }
+            ELSE {
+                404 NOT FOUND
+            }
+        }
+    }
+
+
+DELETE METHOD :
+
+    GET RESOURCE TYPE : if not found => 404 error page
+    IF LOCATION END WITH / AND URI NO {
+        RETURN 404 NOT FOUND 
+    }
+
+    IF DIRECTORY {
+        IF LOCATION HAS CGI {
+            IF (LOCATION HAS INDEX FILES) {
+                RUN CGI WITH DELETE METHOD
+            }
+            ELSE {
+                RETURN 403 FORBIDEN
+            }   
+        }
+        ELSE {
+            DELETE ALL CONTENT OF THE DIRECTORY
+            IF SUCCES {
+                RETURN 204 NO CONTENT
+            }
+            ELSE {
+                RETURN 500 INTERNAL SERVER ERROR (BECAUSE OF PERMISSIONS)
+            }
+        }
+    }
+    ELSE {
+        IF LOCATION HAS CGI {
+            IF (LOCATION HAS INDEX FILES) {
+                RUN CGI WITH DELETE METHOD
+            }
+            ELSE {
+                DELETE THE FILE 
+                IF SUCCES {
+                    204 NO CONTENT
+                }
+                ELSE {
+                    500 INTERNAL SERVER ERROR (BECAUSE OF PERMISSIONS)
+                }
+            }   
+        }
+    }
+
+
+POST METHOD :
+
+    GET RESOURCE TYPE : if not found => 404 error page
+    IF LOCATION END WITH / AND URI NO {
+        RETURN 404 NOT FOUND 
+    }
+
+    IS FILE {
+        IF LOCATION HAS CGI {
+            RUN CGI ON POST METHOD
+        }
+        ELSE {
+            UPLOAD THE FILE AND RETURN 201
+        }
+    }
+    IF DIRECTORY {
+        IF DIRECTORY HAVE INDEX FILES {
+            IF LOCATION HAS CGI {
+                RUN CGI ON POST METHOD
+            }
+            ELSE {
+                RETURN 403 FORBIDEN
+            }
+        }
+        ELSE {
+            RETURN 403 FORBIDEN
+        }
+    }    

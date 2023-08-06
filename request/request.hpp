@@ -55,8 +55,8 @@ class request {
         // POST REQUEST METHODS
         void                                postMethod(client &_client);
         void                                erasePostRequestHeaders(client &_client);
-        void                                normalPostRequestBody(std::string &buffer, int boundaryPosition);
-        void                                chunkedPostRequestBody(std::string &buffer);
+        void                                normalPostRequestBody(std::string &buffer, int boundaryPosition, client &_client);
+        void                                chunkedPostRequestBody(std::string &buffer, client &_client);
         std::vector<std::string>            ft_split(const std::string &str, const std::string &del);
             
         // GET REQUEST METHODS
