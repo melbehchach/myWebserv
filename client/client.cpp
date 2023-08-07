@@ -43,5 +43,6 @@ void client::resetAttributs(void) {
     _endSend = false;
     _serveFile = false;
     _autoIndexOn = false;
+    _cgiOn = false;
 }
 client::~client() {}

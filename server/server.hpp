@@ -50,6 +50,7 @@ class server {
         bool                        _IndexFiles;
         std::string                 _pathForDelete;
         bool                        _firstResourceCheck;
+        std::string                 _Query;
 
 
     // SERVER METHODS

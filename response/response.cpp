@@ -177,6 +177,7 @@ bool response::getMethodResponse(client &_client)
     _endSend = false;
     if (_client._startSend)
     {
+        std::cout << "error " << std::endl;
         if (code != 200 && code != 301)
         {
             _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
@@ -193,15 +194,12 @@ bool response::getMethodResponse(client &_client)
             std::cout << _client._responseBody << std::endl;
             _client._responseBody.append(readFile());
         }
-        else {
-
-        }
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
     if (_client._responseBody.size() > 0)
     {
-        // std::cout << "sending response" << std::endl;
+        std::cout << "sending response" << std::endl;
         _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
@@ -210,15 +208,13 @@ bool response::getMethodResponse(client &_client)
             std::cerr << strerror(errno) << '\n';
         _client._responseBody.erase(0, _bytesSend);
         _client._endSend = true;
-        // std::cout << _client._responseBody.size() << std::endl;
     }
-    else if (_client._responseBody.size() == 0)
+    if (_client._responseBody.size() == 0)
     {
         if (_client._endSend)
         {
-            _client._responseBody.clear();
+            // _client._responseBody.clear();
             _endSend = true;
-            // std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
             _client._endSend = false;
             _client.resetAttributs();
         }

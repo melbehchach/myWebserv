@@ -15,7 +15,7 @@
 const std::string names[] = {
 	"REDIRECT_STATUS", "DOCUMENT_ROOT", "SERVER_SOFTWARE", "SERVER_PORT", "GATEWAY_INTERFACE", "SERVER_NAME", "SCRIPT_FILENAME", "REQUEST_METHOD", "SERVER_PROTOCOL", "CONTENT_TYPE", "CONTENT_LENGTH", "PATH_INFO", "QUERY_STRING", "HTTP_COOKIE"};
 
-CGI::CGI(cgiData const &data, std::string const &port) : _Data(data), _Request(data.req),  _Port(port), _Query(data.req._URI), _Method(data.req._method)
+CGI::CGI(cgiData const &data, std::string const &port, std::string const & q) : _Data(data), _Request(data.req),  _Port(port), _Query(q), _Method(data.req._method)
 {
 	this->_ScriptName = this->ParseScriptName(_Query);
 	this->_CgiPath = data.location.GetCGI().GetFilePath();
@@ -192,9 +192,9 @@ std::string CGI::ParseScriptName(std::string input)
 {
 	if (input.compare("") == 0)
 		throw std::invalid_argument("Error: Bad Querry");
-	size_t pos = input.find_last_of("/");
-	pos++;
-	return input.substr(pos);
+	// size_t pos = input.find_last_of("/");
+	// pos++;
+	return input;
 }
 std::string CGI::GetScriptExtention(std::string input)
 {

@@ -32,7 +32,7 @@ typedef struct configData {
 class CGI {
 
 	public:
-		CGI(cgiData const &, std::string const &);
+		CGI(cgiData const &, std::string const &, std::string const &);
 		~CGI();
 		CGI(const CGI &obj);
 

@@ -411,8 +411,13 @@ void server::getResourceType(client &_client)
 	{
 		if (_URI.find('?') == std::string::npos)
 			tmpURI.append(_URI);
-		else
-			tmpURI.append(_URI.substr(0, _URI.find('?')));
+		else {
+			this->_Query = _URI.substr(_URI.find('?') + 1);
+			_URI.erase(_URI.find('?'));
+			tmpURI.append(_URI);
+			std::cout << this->_Query <<  " == q \n";
+			std::cout << _URI << " == uri \n";
+		}
 		std::cout << tmpURI << std::endl;
 		if ((directory = opendir(tmpURI.c_str())) != nullptr)
 		{ // CHECK THE RESOURCE REQUESTED IF IT IS AN AVILABLE DIRECTORY
@@ -478,15 +483,19 @@ void server::ServeIndexFile(client &_client)
 				this->_request);
 			std::ostringstream ss;
 		try {
-			CGI cgi(input, _client._port);
+			CGI cgi(input, _client._port, this->_Query);
 			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
 			// std::cout << "\n\n=====\n" << cgi.GetOutput() << "\n=====\n\n";
 		}
 		catch (std::exception const & e) {
+			// send 500 res
 			std::cout << e.what() << "\n";
 		}
 		_client._cgiOn = true;
 		_client._responseBody.append(ss.str());
+		// _client._startSend = true;
+		std::cout << "exit" << std::endl;
+		// exit(1);
 	}
 	// ELSE SERVER FIRST INDEX FILE
 	else {
@@ -681,12 +690,11 @@ void server::serverSend(int fd, int index)
 	_mapIt = _clientsMap.find(fd);
 	if (_mapIt != _clientsMap.end())
 	{
-
 		if (_request._method == "GET")
 		{
 			if (_response.getMethodResponse(_mapIt->second))
 			{
-				if (_request._connection == "close\r")
+				if (_request._connection != "keep-alive\r")
 				{
 					close(_mapIt->second._fd);
 					pfds.erase(pfds.begin() + index);
@@ -738,8 +746,8 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 	tm = ctime(&raw);
 	tm.pop_back();
 	std::string body;
-	std::string connection = this->_request._msgrequest.find("Connection") !=  this->_request._msgrequest.end() ? this->_request._msgrequest.find("Connection")->second : "close";
-	header << "HTTP/1.1" << " " << this->_response.code << " " << this->_response.statusLine() << "\r\n" << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
+	std::string connection = this->_request._connection;
+	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
 	if (ex.compare(".php") == 0) {
 		while (std::getline(s, buff)) {
 			if (buff.find("X-Powered-By:") != std::string::npos) {
@@ -771,10 +779,15 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 			if (buff.find("Content-type:") != std::string::npos)
 				header << "Content-type: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
 		}
-		body = input.substr(input.find("\n\n") + 1);
+		if (input.find("\r\n\r\n") != std::string::npos)
+			body = input.substr(input.find("\r\n\r\n") + 4);
+		else {
+			body = input;
+		}
 	}
 	header << "Content-Length: " + std::to_string(input.size());
 	header << "\r\n\r\n";
 	header << body;
+	std::cout << "\n[" << header.str() << "]\n";
 }
 
