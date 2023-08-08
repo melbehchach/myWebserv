@@ -179,8 +179,10 @@ bool response::getMethodResponse(client &_client)
         if (code != 200 && code != 301)
         {
             std::cout << "error " << std::endl;
-            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
-            createHtmlFile(_path);
+            if (!_client._errorPageExist) {
+                _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+                createHtmlFile(_path);
+            }
         }
         else if (_client._autoIndexOn && code != 301)
         {

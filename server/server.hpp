@@ -73,18 +73,18 @@ class server {
         // SECOND CHECK
         void                        getResourceType(client &_client);
         std::string                 AppendRootAndUri(void);
-        void                        UriAvilability(void);
+        void                        UriAvilability(client &_client);
         void                        serveDirecotry(client &_client);
 
 
         bool                        IndexExist(void);
         bool                        runCgi(client &_client);
-        void                        ServeIndexFile(void);
+        void                        ServeIndexFile(client &_client);
 
 
         // DELETE METHOD
-        void                        deleteFile(void);
-        void                        deleteLocation(void);
+        void                        deleteFile(client &_client);
+        void                        deleteLocation(client &_client);
         int                         deleteDirectoryContent(std::string const path);
         int                         deleteSubDirectories(std::string const path);
 
@@ -92,7 +92,7 @@ class server {
         void                        getMethod(client &_client);
         void                        postMethod(client &_client);
         void                        deleteMethod(client &_client);
-
+        bool                        errorPageChecker(client &_client);
 
     public:
 

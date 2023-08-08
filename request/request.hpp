@@ -7,6 +7,7 @@
 // #include "../client/client.hmpp"
 
 #define MAX_HEADER 8190
+#define MEGA 1000000
 class request {
 
     private:

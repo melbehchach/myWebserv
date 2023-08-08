@@ -174,15 +174,16 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
-    // std::cout << "size of file: " << _body.size() << std::endl;
-    fullPath = _client._uploadPath;
-    fullPath.append("/");
-    fullPath.append(_filename);
-    std::cout << "file name: " << fullPath << std::endl;
-    std::ofstream file(fullPath);
-    if (file.is_open()) {
-        file << _body;
-        file.close();
+    if (_body.size() <= (_client._clientBodySize * MEGA))
+    {
+        fullPath = _client._uploadPath;
+        fullPath.append("/");
+        fullPath.append(_filename);
+        std::ofstream file(fullPath);
+        if (file.is_open()) {
+            file << _body;
+            file.close();
+        }
     }
     _body.clear();
 }
@@ -211,14 +212,16 @@ void    request::chunkedPostRequestBody(std::string &buffer, client &_client) {
             buffer.erase(_position, (_chunkSizeVector[i].size() + 2));
         }
     }
-    fullPath = _client._uploadPath;
-    fullPath.append("/");
-    fullPath.append(_filename);
-    std::cout << "file name: " << fullPath << std::endl;
-    std::ofstream file(fullPath);
-    if (file.is_open()) {
-        file << _body;
-        file.close();
+    if (_body.size() <= (_client._clientBodySize * MEGA))
+    {
+        fullPath = _client._uploadPath;
+        fullPath.append("/");
+        fullPath.append(_filename);
+        std::ofstream file(fullPath);
+        if (file.is_open()) {
+            file << _body;
+            file.close();
+        }
     }
     _body.clear();
     _chunksVector.clear();

@@ -7,6 +7,8 @@ client::client() {
     _serveFile = false;
     _autoIndexOn = false;
     _cgiOn = false;
+    _errorPageExist = false;
+    _clientBodySize = 0;
 }
 
 void client::setFd(int fd) {
@@ -44,5 +46,6 @@ void client::resetAttributs(void) {
     _serveFile = false;
     _autoIndexOn = false;
     _cgiOn = false;
+    _errorPageExist = false;
 }
 client::~client() {}
