@@ -78,7 +78,8 @@ class server {
 
 
         bool                        IndexExist(void);
-        void                        ServeIndexFile(client &_client);
+        bool                        runCgi(client &_client);
+        void                        ServeIndexFile(void);
 
 
         // DELETE METHOD
@@ -86,6 +87,11 @@ class server {
         void                        deleteLocation(void);
         int                         deleteDirectoryContent(std::string const path);
         int                         deleteSubDirectories(std::string const path);
+
+
+        void                        getMethod(client &_client);
+        void                        postMethod(client &_client);
+        void                        deleteMethod(client &_client);
 
 
     public:

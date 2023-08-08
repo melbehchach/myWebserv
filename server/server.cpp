@@ -234,82 +234,14 @@ void server::serverReceive(int fd, int index)
 
 		if (_response.code == 200)
 		{
-			std::cout << "sending content" << std::endl;
 			if (_request._method == "POST")
-			{
-				// GET RESOURCE TYPE
-				if (_firstResourceCheck)
-					getResourceType(_mapIt->second);
-				// IT'S A DIRECTORY
-				// if (_isDirectory) {
-				// IF LOCATION HAS INDEX FILES
-				// IF LOCATION HAS CGI
-				// RUN CGI ON POST METHOD
-				// ELSE
-				// RETURN 403
-				// ELSE
-				// RETURN 403 FORBIDEN
-				// }
-				// else {
-				// IF LOCATION HAS INDEX FILES
-				// IF LOCATION HAS CGI
-				// RUN CGI
-				// ELSE
-				// UPLOAD FILE RETURN 201
-				_request.postMethod(_mapIt->second);
-				// }
-			}
+				postMethod(_mapIt->second);
 			else
 			{
-				// SERVE NOW THE CONTENT DEPEND ON THE REQUEST METHOD AND THE ALLOWED ONE ON LOCATION
 				if (_request._method == "GET")
-				{
-					// GET RESOURCE TYPE
-					getResourceType(_mapIt->second);
-					// IT'S A DIRECTORY
-					if (_isDirectory)
-					{
-						// CHECK FIRST IF INDEX FILES EXISTS
-						if (IndexExist())
-							ServeIndexFile(_mapIt->second);
-						else
-							serveDirecotry(_mapIt->second);
-					}
-					else
-					{
-						// IF LOCATION HAS CGI
-						// RUN IT
-						// ELSE
-						// SERVE FILE
-						if (_response.code != 404 && _response.code != 405)
-							UriAvilability();
-					}
-				}
+					getMethod(_mapIt->second);
 				else if (_request._method == "DELETE")
-				{
-					// GET RESOURCE TYPE
-					getResourceType(_mapIt->second);
-					// IT'S A DIRECTORY
-					if (_isDirectory)
-					{
-						// IF LOCATION HAS CGI
-						// IF LOCATION HAS INDEX FILES
-						// RUN CGI ON DELETE METHOD
-						// ELSE
-						// RETURN 403 FORBIDEN
-						// ELSE
-						std::cout << _response._path << std::endl;
-						deleteLocation();
-					}
-					// IT'S A FILE
-					else
-					{
-						// IF LOCATION HAS CGI
-						// RUN CGI ON DELETE METHOD
-						// ELSE
-						deleteFile();
-					}
-				}
+					deleteMethod(_mapIt->second);
 			}
 		}
 		_mapIt->second.enableStartSend();
@@ -397,6 +329,44 @@ bool server::AllowedMethods(void)
 	return (false);
 }
 
+
+void server::postMethod(client &_client) {
+	if (_firstResourceCheck)
+		getResourceType(_client);
+	if (_isDirectory) {
+		if (IndexExist()) {
+			if (!runCgi(_client))
+				_response.code = 203;
+		}
+	}
+	else
+		_request.postMethod(_client);
+}
+
+void server::getMethod(client &_client) {
+	getResourceType(_client);
+	if (_isDirectory) {
+		if (IndexExist()) {
+			if (!runCgi(_client))
+				ServeIndexFile();
+		}
+		else
+			serveDirecotry(_client);
+	}
+	else {
+		if (_response.code != 404 && _response.code != 405)
+			UriAvilability();
+	}
+}
+
+void server::deleteMethod(client &_client) {
+	getResourceType(_client);
+	if (_isDirectory)
+		deleteLocation();
+	else
+		deleteFile();
+}
+
 void server::getResourceType(client &_client)
 {
 	std::string tmpURI;
@@ -466,16 +436,13 @@ bool server::IndexExist(void)
 	return (_IndexFiles);
 }
 
-void server::ServeIndexFile(client &_client)
+
+bool server::runCgi(client &_client)
 {
 	std::string tmp;
 	std::string root;
-	size_t 		size;
 
-	size = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
 	root = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
-	// IF CGI EXIST
-	// RUN CGI
 	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0)
 	{
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
@@ -493,32 +460,39 @@ void server::ServeIndexFile(client &_client)
 		}
 		_client._cgiOn = true;
 		_client._responseBody.append(ss.str());
-		// _client._startSend = true;
-		std::cout << "exit" << std::endl;
-		// exit(1);
+		if (_client._responseBody.size() == 0)
+			_client._cgiOn = false;
 	}
-	// ELSE SERVER FIRST INDEX FILE
-	else {
-		for (size_t i = 0; i < size; i++)
-		{
-			tmp = root;
-			if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
-				_URI.append("/");
-			tmp.append(_URI);
-			tmp.append(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i]);
-			std::cout << tmp << std::endl;
+	return (_client._cgiOn);
+}
 
-			if (access(tmp.c_str(), F_OK | R_OK | W_OK) == -1)
-			{
-				std::cout << "error access path" << std::endl;
-				_response.code = 404;
-			}
-			else
-			{
-				_response.code = 200;
-				_response._path = tmp;
-				break;
-			}
+void server::ServeIndexFile(void)
+{
+	std::string tmp;
+	std::string root;
+	size_t 		size;
+
+	size = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex().size();
+	root = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
+	// ELSE SERVER FIRST INDEX FILE
+	for (size_t i = 0; i < size; i++)
+	{
+		tmp = root;
+		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
+			_URI.append("/");
+		tmp.append(_URI);
+		tmp.append(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i]);
+		std::cout << tmp << std::endl;
+		if (access(tmp.c_str(), F_OK | R_OK | W_OK) == -1)
+		{
+			std::cout << "error access path" << std::endl;
+			_response.code = 404;
+		}
+		else
+		{
+			_response.code = 200;
+			_response._path = tmp;
+			break;
 		}
 	}
 }

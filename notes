@@ -16,17 +16,12 @@ GET METHOD :
 
     IF DIRECTORY {
         IF DIRECTORY HAS AN INDEX FILES{
-            IF LOCATION HAVE CGI {
-                RUN CGI
+            SERVER FIRTS INDEX FILE
+            IF IT EXISTS {
+                SERVE IT 200
             }
             ELSE {
-                SERVER FIRTS INDEX FILE
-                IF IT EXISTS {
-                    SERVE IT 200
-                }
-                ELSE {
-                    404 NOT FOUND
-                }
+                404 NOT FOUND
             }
         }
         ELSE {

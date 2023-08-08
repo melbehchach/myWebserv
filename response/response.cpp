@@ -180,13 +180,13 @@ bool response::getMethodResponse(client &_client)
         std::cout << "error " << std::endl;
         if (code != 200 && code != 301)
         {
-            _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
         }
         else if (_client._autoIndexOn && code != 301)
         {
             std::cout << "HALLAOUI HABIB GALBI" << std::endl;
-            _path = "/Users/aabdou/Desktop/myWebserv/cache/list.html";
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
         if (!_client._cgiOn) {
@@ -213,7 +213,6 @@ bool response::getMethodResponse(client &_client)
     {
         if (_client._endSend)
         {
-            // _client._responseBody.clear();
             _endSend = true;
             _client._endSend = false;
             _client.resetAttributs();
