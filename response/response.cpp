@@ -161,7 +161,6 @@ std::string response::getHeaders(int size, client &_client)
     _headers += dateHeader();
     _headers += contentTypeHeader();
     _headers += contentLengthHeader(size);
-    _headers += connexionHeader();
     if (code == 301)
     {
         std::cout << "redirect client" << std::endl;
@@ -177,9 +176,9 @@ bool response::getMethodResponse(client &_client)
     _endSend = false;
     if (_client._startSend)
     {
-        std::cout << "error " << std::endl;
         if (code != 200 && code != 301)
         {
+            std::cout << "error " << std::endl;
             _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
         }
@@ -190,10 +189,11 @@ bool response::getMethodResponse(client &_client)
             createHtmlFile(_path);
         }
         if (!_client._cgiOn) {
+            std::cout << "Headers generation" << std::endl;
             _client._responseBody = getHeaders(get_file_size(), _client);
-            std::cout << _client._responseBody << std::endl;
             _client._responseBody.append(readFile());
         }
+        // std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND

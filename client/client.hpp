@@ -15,6 +15,7 @@ class client {
         std::string _hostname;
         std::string _method;
         std::string _uploadPath;
+        std::string	_errorPagePath;
         int         _fd;
         bool        _startRecv;
         bool        _startSend;
@@ -22,6 +23,7 @@ class client {
         bool        _serveFile;
         bool        _autoIndexOn;
         bool        _cgiOn;
+		bool		_errorPageExist;
 
         void setFd(int fd);
         void enableStartRecv(void);

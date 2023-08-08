@@ -23,7 +23,6 @@ int server::serverSocket(void)
 		std::cerr << strerror(errno);
 		exit(1);
 	}
-	// listners.push_back(_socketFd);
 	return (_socketFd);
 }
 
@@ -189,7 +188,6 @@ void server::serverReceive(int fd, int index)
 			return;
 		}
 		else
-			std::cout << "number of bytes read: " << _bytesRecv << std::endl;
 		_mapIt->second._requestBody.append(_buffer, _bytesRecv);
 		if (_mapIt->second._startRecv)
 		{ // stor headers in a multi-map and erase them from the body
@@ -335,8 +333,8 @@ void server::postMethod(client &_client) {
 		getResourceType(_client);
 	if (_isDirectory) {
 		if (IndexExist()) {
-			if (!runCgi(_client))
-				_response.code = 203;
+			if (!runCgi(_client) && _response.code == 200)
+				_response.code = 403;
 		}
 	}
 	else
@@ -347,15 +345,17 @@ void server::getMethod(client &_client) {
 	getResourceType(_client);
 	if (_isDirectory) {
 		if (IndexExist()) {
-			if (!runCgi(_client))
+			if (!runCgi(_client) && _response.code == 200)
 				ServeIndexFile();
 		}
 		else
 			serveDirecotry(_client);
 	}
 	else {
-		if (_response.code != 404 && _response.code != 405)
-			UriAvilability();
+		if (!runCgi(_client)) {
+			if (_response.code != 404 && _response.code != 405)
+				UriAvilability();
+		}
 	}
 }
 
@@ -439,10 +439,6 @@ bool server::IndexExist(void)
 
 bool server::runCgi(client &_client)
 {
-	std::string tmp;
-	std::string root;
-
-	root = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
 	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0)
 	{
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
@@ -450,18 +446,20 @@ bool server::runCgi(client &_client)
 				this->_request);
 			std::ostringstream ss;
 		try {
+			std::cout << "Debug: " << this->_Query << std::endl;
 			CGI cgi(input, _client._port, this->_Query);
 			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
 			// std::cout << "\n\n=====\n" << cgi.GetOutput() << "\n=====\n\n";
 		}
 		catch (std::exception const & e) {
-			// send 500 res
+			_response.code = 500;
+			std::cout << "EXCEPTION THROWN" << std::endl;
+			_client._cgiOn = false;
 			std::cout << e.what() << "\n";
+			return (_client._cgiOn);
 		}
 		_client._cgiOn = true;
 		_client._responseBody.append(ss.str());
-		if (_client._responseBody.size() == 0)
-			_client._cgiOn = false;
 	}
 	return (_client._cgiOn);
 }
@@ -514,9 +512,6 @@ void server::serveDirecotry(client &_client)
 		tmp.append(_URI);
 		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
 			_URI.append("/");
-
-		std::cout << "autoindex on" << std::endl;
-		std::cout << "current path: " << tmp << std::endl;
 
 		if ((directory = opendir(tmp.c_str())) != nullptr)
 		{
@@ -759,9 +754,10 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 			body = input;
 		}
 	}
-	header << "Content-Length: " + std::to_string(input.size());
+	header << "Content-Length: " + std::to_string(input.size() - 4);
 	header << "\r\n\r\n";
 	header << body;
-	std::cout << "\n[" << header.str() << "]\n";
+	std::cout << "CGI RESPONSE" << "\n";
+	std::cout << header.str() << "\n";
 }
 
