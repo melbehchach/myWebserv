@@ -193,7 +193,7 @@ bool response::getMethodResponse(client &_client)
             _client._responseBody = getHeaders(get_file_size(), _client);
             _client._responseBody.append(readFile());
         }
-        // std::cout << _client._responseBody << std::endl;
+        std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND

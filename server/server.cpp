@@ -189,6 +189,7 @@ void server::serverReceive(int fd, int index)
 		}
 		else
 		_mapIt->second._requestBody.append(_buffer, _bytesRecv);
+
 		if (_mapIt->second._startRecv)
 		{ // stor headers in a multi-map and erase them from the body
 			std::cout << _mapIt->second._requestBody << std::endl;
@@ -249,9 +250,8 @@ void server::serverReceive(int fd, int index)
 void server::getCurrentServer(client &_client)
 {
 	_serverIndex = -1;
-	std::cout << _client._port << std::endl;
 	for (size_t i = 0; i < _configFile.GetNumberOfServers(); i++)
-	{ // GET THE SERVER
+	{
 		for (size_t j = 0; j < _configFile.GetServers()[i].GetPortNumbers().size(); j++)
 		{
 			if (_client._port == _configFile.GetServers()[i].GetPortNumbers()[j])
@@ -261,7 +261,7 @@ void server::getCurrentServer(client &_client)
 			}
 		}
 		if (_serverIndex != -1)
-			break; // TO BREAK THE SECOND LOOP
+			break;
 	}
 }
 
@@ -291,7 +291,6 @@ bool server::RedirectionAvilability(void)
 	returnUri = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
 	if (returnUri.size() > 0)
 	{
-		std::cout << "redirection url exist" << std::endl;
 		_response._path = returnUri;
 		return (false);
 	}
@@ -429,7 +428,6 @@ bool server::IndexExist(void)
 	if (size == 4)
 	{
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[3];
-		// INDEX IN THE DEFAULT MODE SO CHECK FOR AUTOINDEX
 		if (tmp == "index.nginx-debian.html")
 			_IndexFiles = false;
 	}
@@ -439,14 +437,13 @@ bool server::IndexExist(void)
 
 bool server::runCgi(client &_client)
 {
-	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0)
+	if (this->_Query.compare("") != 0  && _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0)
 	{
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
 			_configFile.GetServers()[_serverIndex],
 				this->_request);
-			std::ostringstream ss;
+			std::ostringstream ss; 
 		try {
-			std::cout << "Debug: " << this->_Query << std::endl;
 			CGI cgi(input, _client._port, this->_Query);
 			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
 			// std::cout << "\n\n=====\n" << cgi.GetOutput() << "\n=====\n\n";
@@ -461,6 +458,28 @@ bool server::runCgi(client &_client)
 		_client._cgiOn = true;
 		_client._responseBody.append(ss.str());
 	}
+	else if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0) {
+			cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
+			_configFile.GetServers()[_serverIndex],
+				this->_request);
+			std::ostringstream ss; 
+		try {
+			std::cout << "INDEX ==== " << _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[0] << "\n";
+			CGI cgi(input, _client._port, _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[0]);
+			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
+			// std::cout << "\n\n=====\n" << cgi.GetOutput() << "\n=====\n\n";
+		}
+		catch (std::exception const & e) {
+			_response.code = 500;
+			std::cout << "EXCEPTION THROWN" << std::endl;
+			_client._cgiOn = false;
+			std::cout << e.what() << "\n";
+			return (_client._cgiOn);
+		}
+		_client._cgiOn = true;
+		_client._responseBody.append(ss.str());
+	}
+	std::cout << "done executing cgi" << "\n";
 	return (_client._cgiOn);
 }
 
@@ -716,7 +735,7 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 	tm.pop_back();
 	std::string body;
 	std::string connection = this->_request._connection;
-	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
+	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection;
 	if (ex.compare(".php") == 0) {
 		while (std::getline(s, buff)) {
 			if (buff.find("X-Powered-By:") != std::string::npos) {
@@ -740,7 +759,12 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 			else if (buff.compare("\r\n\r\n") == 0)
 				break;
 		}
-		body = input.substr(input.find("\r\n\r\n") + 4);
+		if (input.find("\r\n\r\n") != std::string::npos)
+			body = input.substr(input.find("\r\n\r\n") + 4);
+		else {
+			body = input;
+		}
+		header << "Content-Length: " + (std::to_string(body.size()));
 	}
 	else if (ex.compare(".py") == 0) {
 		while (std::getline(s, buff))
@@ -753,11 +777,9 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 		else {
 			body = input;
 		}
+		header << "Content-Length: " + std::to_string(input.size());
 	}
-	header << "Content-Length: " + std::to_string(input.size() - 4);
 	header << "\r\n\r\n";
 	header << body;
-	std::cout << "CGI RESPONSE" << "\n";
-	std::cout << header.str() << "\n";
 }
 
