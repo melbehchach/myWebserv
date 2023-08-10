@@ -69,8 +69,7 @@ std::string response::location(void)
 
 /*                      DELETE METHOD RESPONSE                      */
 
-std::string response::deleteHeaders(int size, client &_client)
-{
+std::string response::deleteHeaders(int size, client &_client) {
     _headers = statusLine();
     _headers += serverNameHeader(_client);
     _headers += dateHeader();
@@ -90,27 +89,20 @@ std::string response::deleteHeaders(int size, client &_client)
 bool response::deleteMethodResponse(client &_client)
 {
     _endSend = false;
-    if (_client._startSend)
-    {
-        // std::cout << "responding code: " << << std::endl;
-        if (code != 200 && code != 204)
-        {
-            _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
+    if (_client._startSend) {
+        if (code != 200 && code != 204) {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
             createHtmlFile(_path);
             _client._responseBody = deleteHeaders(get_file_size(), _client);
             _client._responseBody.append(readFile());
         }
-        else
-        {
+        else {
             _client._responseBody = deleteHeaders(0, _client);
         }
         std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
-    // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
-    if (_client._responseBody.size() > 0)
-    {
-        // std::cout << "sending response" << std::endl;
+    if (_client._responseBody.size() > 0) {
         _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
@@ -120,13 +112,10 @@ bool response::deleteMethodResponse(client &_client)
         _client._responseBody.erase(0, _bytesSend);
         _client._endSend = true;
     }
-    else if (_client._responseBody.size() == 0)
-    {
-        if (_client._endSend)
-        {
+    else if (_client._responseBody.size() == 0) {
+        if (_client._endSend) {
             _client._responseBody.clear();
             _endSend = true;
-            std::cout << "hello after end sendig from client: " << _client._fd << std::endl;
             _client._endSend = false;
             _client.resetAttributs();
         }
@@ -135,21 +124,56 @@ bool response::deleteMethodResponse(client &_client)
 }
 
 /*                      POST METHOD RESPONSE                      */
-void response::postMethodResponse(client &_client)
-{
-    int counter = 0;
-
+std::string response::postHeaders(int size, client &_client) {
     _headers = statusLine();
     _headers += connexionHeader();
     _headers += serverNameHeader(_client);
     _headers += dateHeader();
-    _headers += contentLengthHeader(0);
+    if (code != 200 && code != 204) {
+        contentType(_path);
+        _headers += contentTypeHeader();
+    }
+    else
+        size = 0;
+    _headers += contentLengthHeader(size);
+    _headers += connexionHeader();
     _headers += "\r\n";
-    counter = send(_client._fd, _headers.c_str(), _headers.size(), 0);
-    if (counter < 0)
-        std::cout << strerror(errno) << '\n';
-    _client.disableStartSend();
-    _client.resetAttributs();
+    return (_headers);
+}
+
+bool response::postMethodResponse(class client &_client) {
+    _endSend = false;
+    if (_client._startSend) {
+        if (code != 200 && code != 201) {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+            createHtmlFile(_path);
+            _client._responseBody = postHeaders(get_file_size(), _client);
+            _client._responseBody.append(readFile());
+        }
+        else {
+            _client._responseBody = postHeaders(0, _client);
+        }
+        _client.disableStartSend();
+    }
+    if (_client._responseBody.size() > 0) {
+        _bytesCounter = _client._responseBody.size() / 10;
+        if (_client._responseBody.size() < BUFFSIZE)
+            _bytesCounter = _client._responseBody.size();
+        _bytesSend = send(_client._fd, _client._responseBody.c_str(), _bytesCounter, 0);
+        if (_bytesSend < 0)
+            std::cerr << strerror(errno) << '\n';
+        _client._responseBody.erase(0, _bytesSend);
+        _client._endSend = true;
+    }
+    else if (_client._responseBody.size() == 0) {
+        if (_client._endSend) {
+            _client._responseBody.clear();
+            _endSend = true;
+            _client._endSend = false;
+            _client.resetAttributs();
+        }
+    }
+    return (_endSend);
 }
 
 /*                      GET METHOD RESPONSE                      */
@@ -172,19 +196,15 @@ std::string response::getHeaders(int size, client &_client)
 bool response::getMethodResponse(client &_client)
 {
     _endSend = false;
-    if (_client._startSend)
-    {
-        if (code != 200 && code != 301)
-        {
-            std::cout << "error " << std::endl;
+    if (_client._startSend) {
+        if (code != 200 && code != 301) {
             if (!_client._errorPageExist) {
-                _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
+                _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
                 createHtmlFile(_path);
             }
         }
-        else if (_client._autoIndexOn && code != 301)
-        {
-            _path = "/Users/aabdou/Desktop/myWebserv/cache/list.html";
+        else if (_client._autoIndexOn && code != 301) {
+            _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
         if (!_client._cgiOn) {
@@ -193,9 +213,7 @@ bool response::getMethodResponse(client &_client)
         }
         _client.disableStartSend();
     }
-    // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
-    if (_client._responseBody.size() > 0)
-    {
+    if (_client._responseBody.size() > 0) {
         _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
@@ -205,10 +223,8 @@ bool response::getMethodResponse(client &_client)
         _client._responseBody.erase(0, _bytesSend);
         _client._endSend = true;
     }
-    if (_client._responseBody.size() == 0)
-    {
-        if (_client._endSend)
-        {
+    if (_client._responseBody.size() == 0) {
+        if (_client._endSend) {
             _endSend = true;
             _client._endSend = false;
             _client.resetAttributs();

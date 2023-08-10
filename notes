@@ -128,8 +128,11 @@ POST METHOD :
     }
 
 
-# send error page related to clientmaxbody size
-# server throws exeption ??
-# curl post request dosent recieve responce
+
+# change location  matching : DONE
+
+# send error page related to clientmaxbody size : DONE
+
+# curl post request dosent recieve responce : DONE
+
 # need to implement post in cgi
-# change location  matching

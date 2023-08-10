@@ -43,7 +43,8 @@ class response {
         std::string location(void);
         std::string getHeaders(int size, client &_client);
         std::string deleteHeaders(int size, client &_client);
-        void postMethodResponse(class client &_client);
+        std::string postHeaders(int size, class client &_client);
+        bool postMethodResponse(class client &_client);
         bool getMethodResponse(client &_client);
         bool deleteMethodResponse(client &_client);
         int get_file_size(void);

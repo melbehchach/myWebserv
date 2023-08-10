@@ -5,12 +5,14 @@ request::request() {
     _chunkedTransfer = false;
 }
 
-void request::requestHeader(std::string& buffer) { // SAME FUNCTION FOR POST GET AND DELETE
+void request::requestHeader(std::string& buffer) {
     _message << buffer;
+    _headers.clear();
     getRequestLine();
     getHeaders();
     _position = buffer.find(_headers);
-    if (_method == "POST" && _position != -1) { // because of of the body infos boundary.....
+    std::cout << _headers << std::endl;
+    if (_method == "POST" && _position != -1) {
         _headersSize = _headers.size() + _position;
         _contentLength = _headersSize;
         buffer.erase(0, _headersSize);
@@ -20,7 +22,7 @@ void request::requestHeader(std::string& buffer) { // SAME FUNCTION FOR POST GET
     _message.clear();
 }
 
-bool request::getRequestLine(void) { // reading the request line to get infos about http method uri and http version
+bool request::getRequestLine(void) {
     std::string tmp;
     int         pos;
 
@@ -49,7 +51,6 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
         _statusCode = 505;
         return (false);
     }
-
     return (true);
 }
 
@@ -60,6 +61,7 @@ void request::getHeaders(void) {
 
     while (1) {
         std::getline(_message, tmp, '\n');
+        std::cout << "headre: " << tmp << std::endl;
         _headers.append(tmp);
         _headers += '\n';
         if (tmp == "\r")
@@ -80,7 +82,6 @@ void request::getHeaders(void) {
 
 
 /*         POST METHOD PARSING REQUEST         */
-
 void request::postBodyInfos(std::string &infos) {
     std::string tmp;
     int         size;
@@ -88,20 +89,17 @@ void request::postBodyInfos(std::string &infos) {
 
     _message << infos;
     if (_chunkedTransfer)
-        std::getline(_message, tmp, '\n'); // skip the line containing the size of chunk
+        std::getline(_message, tmp, '\n');
     for (int i = 0; i < 3; i++) {
         std::getline(_message, tmp, '\n');
         size = tmp.size();
         _bodyInfoSize += size;
-        if (i == 0)
-        {
+        if (i == 0){
             _boundary = tmp;
-            std::cout << "BOUNDARYYYYY: " << _boundary << std::endl;
         }
         else if (i == 1) {
              if ((pos = tmp.find("filename=")) != -1)
                 _filename = tmp.substr((pos + 10), (size - (pos + 12)));
-            std::cout << _filename << "   +>>>>>>>" << std::endl;
         }
         else {
             pos = tmp.find(':');
@@ -147,7 +145,6 @@ void    request::postMethod(client &_client) {
     }
     // FINALE STAPE
     _position2 = _client._requestBody.find(_finaleBoundary); // find the last boundary
-        std::cout << "HAMIIIIIIIIIIIID: " << _position2 << "   "  << _finaleBoundary << std::endl;
     if (_position2 != -1) { // End of receiving
         while ((_position1 = _client._requestBody.find(_boundary)) != -1) {
             if(_chunkedTransfer)
@@ -173,13 +170,12 @@ void    request::postMethod(client &_client) {
 void    request::normalPostRequestBody(std::string &buffer, int boundary_Position, client &_client) {
     std::string fullPath;
 
-    std::cout << "This is fuul path =========> "  << std::cout;
+    fullPath.clear();
     _position = buffer.find(_finaleBoundary);
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
-    if (_body.size() <= (_client._clientBodySize * MEGA))
-    {
+    if (_body.size() <= (_client._clientBodySize * MEGA)) {
         fullPath = _client._uploadPath;
         fullPath.append("/");
         fullPath.append(_filename);
