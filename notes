@@ -7,11 +7,11 @@ if i have a GET request ==> i should check if the location support this method
     so if (GET true in this location the request should be processed)
 
 
-GET METHOD : 
+GET METHOD :
 
-    GET RESOURCE TYPE 
+    GET RESOURCE TYPE
     IF LOCATION END WITH / AND URI NO {
-        RETURN 404 NOT FOUND 
+        RETURN 404 NOT FOUND
     }
 
     IF DIRECTORY {
@@ -58,7 +58,7 @@ DELETE METHOD :
 
     GET RESOURCE TYPE : if not found => 404 error page
     IF LOCATION END WITH / AND URI NO {
-        RETURN 404 NOT FOUND 
+        RETURN 404 NOT FOUND
     }
 
     IF DIRECTORY {
@@ -68,7 +68,7 @@ DELETE METHOD :
             }
             ELSE {
                 RETURN 403 FORBIDEN
-            }   
+            }
         }
         ELSE {
             DELETE ALL CONTENT OF THE DIRECTORY
@@ -86,14 +86,14 @@ DELETE METHOD :
                 RUN CGI WITH DELETE METHOD
             }
             ELSE {
-                DELETE THE FILE 
+                DELETE THE FILE
                 IF SUCCES {
                     204 NO CONTENT
                 }
                 ELSE {
                     500 INTERNAL SERVER ERROR (BECAUSE OF PERMISSIONS)
                 }
-            }   
+            }
         }
     }
 
@@ -102,7 +102,7 @@ POST METHOD :
 
     GET RESOURCE TYPE : if not found => 404 error page
     IF LOCATION END WITH / AND URI NO {
-        RETURN 404 NOT FOUND 
+        RETURN 404 NOT FOUND
     }
 
     IS FILE {
@@ -125,4 +125,11 @@ POST METHOD :
         ELSE {
             RETURN 403 FORBIDEN
         }
-    }    
+    }
+
+
+# send error page related to clientmaxbody size
+# server throws exeption ??
+# curl post request dosent recieve responce
+# need to implement post in cgi
+# change location  matching

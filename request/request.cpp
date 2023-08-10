@@ -34,7 +34,7 @@ bool request::getRequestLine(void) { // reading the request line to get infos ab
             _URI = tmp.substr(0, pos);
         else
             _http = tmp.substr(0, tmp.size() == 0 ? 0 : (tmp.size() - 1));
-        if (pos != -1) 
+        if (pos != -1)
             tmp.erase(0, (pos + 1));
     }
     if (_method != "GET" && _method != "POST" && _method != "DELETE") {
@@ -69,7 +69,7 @@ void request::getHeaders(void) {
         if (pos == -1) // in case of header contains an empty line
             continue;
         _key = tmp.substr(0, (pos + 1));
-        _value = tmp.substr((pos + 2), (size - pos)); 
+        _value = tmp.substr((pos + 2), (size - pos));
         if (_key == "Connection:")
             _connection = _value;
         else if (_key == "Transfer-Encoding:")
@@ -85,7 +85,7 @@ void request::postBodyInfos(std::string &infos) {
     std::string tmp;
     int         size;
     int         pos;
-    
+
     _message << infos;
     if (_chunkedTransfer)
         std::getline(_message, tmp, '\n'); // skip the line containing the size of chunk
@@ -94,18 +94,21 @@ void request::postBodyInfos(std::string &infos) {
         size = tmp.size();
         _bodyInfoSize += size;
         if (i == 0)
+        {
             _boundary = tmp;
+            std::cout << "BOUNDARYYYYY: " << _boundary << std::endl;
+        }
         else if (i == 1) {
              if ((pos = tmp.find("filename=")) != -1)
                 _filename = tmp.substr((pos + 10), (size - (pos + 12)));
+            std::cout << _filename << "   +>>>>>>>" << std::endl;
         }
         else {
             pos = tmp.find(':');
             _contentType = tmp.substr((pos + 2), (size - pos));
         }
-        // if (_boundary.size() == 0) IN CASE OF REQUEST DON'T HAVE ANY BODY INFOS
-        //     break;
     }
+
     _message.str("");
     _message.clear();
 }
@@ -130,7 +133,7 @@ void request::erasePostRequestHeaders(client &_client) {
 }
 
 void    request::postMethod(client &_client) {
-    std::cout << "file upload in progress..." << std::endl;
+
     _position1 = _client._requestBody.find(_boundary);
     if (_position1 != -1) { // in case another boundary "body infos" means another body exists
         if(_chunkedTransfer)
@@ -143,8 +146,8 @@ void    request::postMethod(client &_client) {
         erasePostRequestHeaders(_client);
     }
     // FINALE STAPE
-    // std::cout << _client._requestBody << std::endl;
     _position2 = _client._requestBody.find(_finaleBoundary); // find the last boundary
+        std::cout << "HAMIIIIIIIIIIIID: " << _position2 << "   "  << _finaleBoundary << std::endl;
     if (_position2 != -1) { // End of receiving
         while ((_position1 = _client._requestBody.find(_boundary)) != -1) {
             if(_chunkedTransfer)
@@ -159,7 +162,7 @@ void    request::postMethod(client &_client) {
         _position2 = _client._requestBody.find(_finaleBoundary); // update the postion in case we had lots of files
         if (_chunkedTransfer)
             chunkedPostRequestBody(_client._requestBody, _client);
-        else 
+        else
             normalPostRequestBody(_client._requestBody, _position2, _client);
         _client._requestBody.clear();
         _client.enableStartSend();
@@ -170,6 +173,7 @@ void    request::postMethod(client &_client) {
 void    request::normalPostRequestBody(std::string &buffer, int boundary_Position, client &_client) {
     std::string fullPath;
 
+    std::cout << "This is fuul path =========> "  << std::cout;
     _position = buffer.find(_finaleBoundary);
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
@@ -179,12 +183,15 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
         fullPath = _client._uploadPath;
         fullPath.append("/");
         fullPath.append(_filename);
+        std::cout << "This is fuul path =========> " << fullPath << std::endl;
         std::ofstream file(fullPath);
         if (file.is_open()) {
             file << _body;
             file.close();
         }
     }
+    else
+        _client._errorCode = 413;
     _body.clear();
 }
 

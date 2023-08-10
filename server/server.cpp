@@ -188,8 +188,7 @@ void server::serverReceive(int fd, int index)
 			return;
 		}
 		else
-		_mapIt->second._requestBody.append(_buffer, _bytesRecv);
-
+			_mapIt->second._requestBody.append(_buffer, _bytesRecv);
 		if (_mapIt->second._startRecv)
 		{
 			_request.requestHeader(_mapIt->second._requestBody);
@@ -207,7 +206,7 @@ void server::serverReceive(int fd, int index)
 			// GET LOCATION
 			if (!LocationAvilability())
 			{
-				if (!errorPageChecker(_mapIt->second))
+				if (!errorPageChecker(404, _mapIt->second))
 					_response.code = 404;
 				_mapIt->second.enableStartSend();
 				return;
@@ -222,7 +221,7 @@ void server::serverReceive(int fd, int index)
 			// METHODS ALLOWED IN LOCATION
 			else if (!AllowedMethods())
 			{
-				if (!errorPageChecker(_mapIt->second))
+				if (!errorPageChecker(405, _mapIt->second))
 					_response.code = 405;
 				_mapIt->second.enableStartSend();
 				return;
@@ -272,9 +271,13 @@ bool server::LocationAvilability(void)
 	_locationIndex = -1;
 	for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++)
 	{
+		std::string uri = _URI.substr(0, _URI.find_last_of('/') != 0 ? _URI.find_last_of('/') : 1 );
+		std::cout << "uri = " << uri << "\n";
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri();
-		if (((position = _URI.find(tmp, 0)) == 0) && tmp.size() > 1)
+		std::cout << "tmp = " << tmp << "\n";
+		if (tmp.compare(uri) == 0)
 		{
+			std::cout << "here\n";
 			_locationIndex = i;
 			return (true);
 		}
@@ -325,11 +328,17 @@ bool server::AllowedMethods(void)
 	return (false);
 }
 
-bool server::errorPageChecker(client &_client) {
-	std::map<int, std::string> tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetErrorPage();
+bool server::errorPageChecker(int code, client &_client) {
+	std::map<int, std::string> tmp;
 	std::map<int, std::string>::iterator errorMapIt;
-	
-	errorMapIt =  tmp.begin();
+	if (_serverIndex != -1 && _locationIndex != -1 ) {
+		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetErrorPage();
+	}
+	else if (_locationIndex == -1) {
+		tmp = _configFile.GetServers()[_serverIndex].GetErrorPage();
+	}
+
+	errorMapIt =  tmp.find(code);
 	if (errorMapIt !=  tmp.end()) {
 		_response._path = errorMapIt->second;
 		_response.code = errorMapIt->first;
@@ -347,8 +356,10 @@ void server::postMethod(client &_client) {
 	if (_isDirectory) {
 		if (IndexExist()) {
 			if (!runCgi(_client) && _response.code == 200) {
-				if (!errorPageChecker(_client))
-					_response.code = 403;
+				// if (!errorPageChecker(403, _client))
+				// 	_response.code = 403;
+				// else
+					_isDirectory = false;
 			}
 		}
 	}
@@ -391,6 +402,8 @@ void server::getResourceType(client &_client)
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
 	else
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot().size();
+
+	std::cout << tmpURI << std::endl;
 	if (tmpURI.size() > 0)
 	{
 		if (_URI.find('?') == std::string::npos)
@@ -454,13 +467,13 @@ bool server::runCgi(client &_client)
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
 			_configFile.GetServers()[_serverIndex],
 				this->_request);
-			std::ostringstream ss; 
+			std::ostringstream ss;
 		try {
 			CGI cgi(input, _client._port, this->_Query);
 			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
 		}
 		catch (std::exception const & e) {
-			if (!errorPageChecker(_client))
+			if (!errorPageChecker(500, _client))
 				_response.code = 500;
 			_client._cgiOn = false;
 			std::cout << e.what() << "\n";
@@ -473,14 +486,14 @@ bool server::runCgi(client &_client)
 			cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
 			_configFile.GetServers()[_serverIndex],
 				this->_request);
-			std::ostringstream ss; 
+			std::ostringstream ss;
 		try {
 			std::cout << "INDEX ==== " << _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[0] << "\n";
 			CGI cgi(input, _client._port, _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[0]);
 			this->parseCgiOutput(cgi.GetOutput(), ss, cgi.GetExtention());
 		}
 		catch (std::exception const & e) {
-			if (!errorPageChecker(_client))
+			if (!errorPageChecker(500, _client))
 				_response.code = 500;
 			_client._cgiOn = false;
 			std::cout << e.what() << "\n";
@@ -510,7 +523,7 @@ void server::ServeIndexFile(client &_client)
 		tmp.append(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetIndex()[i]);
 		std::cout << tmp << std::endl;
 		if (access(tmp.c_str(), F_OK | R_OK | W_OK) == -1) {
-			if (!errorPageChecker(_client))
+			if (!errorPageChecker(404, _client))
 				_response.code = 404;
 		}
 		else
@@ -565,7 +578,7 @@ void server::serveDirecotry(client &_client)
 	}
 	// IF AUTOINDEX OFF
 	else if (!_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetAutoIndexDir()) {
-		if (!errorPageChecker(_client))
+		if (!errorPageChecker(403, _client))
 			_response.code = 403;
 	}
 }
@@ -578,7 +591,7 @@ void server::UriAvilability(client &_client)
 		return;
 	}
 	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1) {
-		if (!errorPageChecker(_client))
+		if (!errorPageChecker(404, _client))
 			_response.code = 404;
 	}
 }
@@ -587,7 +600,7 @@ void server::deleteFile(client &_client)
 {
 	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
 	{
-		if (!errorPageChecker(_client))
+		if (!errorPageChecker(500, _client))
 			_response.code = 500;
 	}
 	else
@@ -596,7 +609,7 @@ void server::deleteFile(client &_client)
 			_response.code = 204;
 		else
 		{
-			if (!errorPageChecker(_client))
+			if (!errorPageChecker(500, _client))
 				_response.code = 500;
 		}
 	}
@@ -676,7 +689,7 @@ void server::deleteLocation(client &_client)
 
 	ret = deleteDirectoryContent(_pathForDelete);
 	if (ret == 500) {
-		if (!errorPageChecker(_client))
+		if (!errorPageChecker(ret, _client))
 			_response.code = ret;
 	}
 	else
@@ -720,6 +733,9 @@ void server::serverSend(int fd, int index)
 		}
 		else if ((_request._method == "POST") && _mapIt->second._startSend)
 		{
+			std::cout << "RESPONDING... " << std::endl;
+			if (_mapIt->second._errorCode == 413)
+				_response.code = 413;
 			_response.postMethodResponse(_mapIt->second);
 			if (_request._connection != "keep-alive\r")
 			{
@@ -727,7 +743,9 @@ void server::serverSend(int fd, int index)
 				pfds.erase(pfds.begin() + index);
 				_clientsMap.erase(_mapIt);
 			}
-			_mapIt->second.enableStartRecv();
+			else {
+				_mapIt->second.enableStartRecv();
+			}
 		}
 	}
 }

@@ -92,7 +92,7 @@ class server {
         void                        getMethod(client &_client);
         void                        postMethod(client &_client);
         void                        deleteMethod(client &_client);
-        bool                        errorPageChecker(client &_client);
+        bool                        errorPageChecker(int code, client &_client);
 
     public:
 

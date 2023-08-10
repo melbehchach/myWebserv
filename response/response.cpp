@@ -163,7 +163,6 @@ std::string response::getHeaders(int size, client &_client)
     _headers += contentLengthHeader(size);
     if (code == 301)
     {
-        std::cout << "redirect client" << std::endl;
         _headers += location();
     }
     _headers += "\r\n";
@@ -172,7 +171,6 @@ std::string response::getHeaders(int size, client &_client)
 
 bool response::getMethodResponse(client &_client)
 {
-    std::cout << "time to response" << std::endl;
     _endSend = false;
     if (_client._startSend)
     {
@@ -180,28 +178,24 @@ bool response::getMethodResponse(client &_client)
         {
             std::cout << "error " << std::endl;
             if (!_client._errorPageExist) {
-                _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
+                _path = "/Users/aabdou/Desktop/myWebserv/cache/error.html";
                 createHtmlFile(_path);
             }
         }
         else if (_client._autoIndexOn && code != 301)
         {
-            std::cout << "HALLAOUI HABIB GALBI" << std::endl;
-            _path = "/Users/mel-behc/Desktop/myWebserv/cache/list.html";
+            _path = "/Users/aabdou/Desktop/myWebserv/cache/list.html";
             createHtmlFile(_path);
         }
         if (!_client._cgiOn) {
-            std::cout << "Headers generation" << std::endl;
             _client._responseBody = getHeaders(get_file_size(), _client);
             _client._responseBody.append(readFile());
         }
-        std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
     // MUST DEFINE WHICH CLIENT SHOULD I RESPOND
     if (_client._responseBody.size() > 0)
     {
-        std::cout << "sending response" << std::endl;
         _bytesCounter = _client._responseBody.size() / 10;
         if (_client._responseBody.size() < BUFFSIZE)
             _bytesCounter = _client._responseBody.size();
