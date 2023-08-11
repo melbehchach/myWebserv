@@ -40,7 +40,7 @@ class CGI {
 		request const & _Request;
 		const std::string _Port;
 		const std::string _Query;
-		char *env[14];
+		// char *env[14];
 		std::string _ScriptName;
 		std::string _ScriptExtension;
 		std::string _Root;
@@ -48,6 +48,8 @@ class CGI {
 		std::string _CgiOutput;
 		const std::string	_Method;
 };
+
+
 
 #endif
 

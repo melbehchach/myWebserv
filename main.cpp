@@ -4,8 +4,13 @@
 
 // using namespace std;
 
+void s() {
+    system("leaks webserv");
+}
+
 int main(int ac, char **av)
 {
+    atexit(s);
     // signal(SIG_IGN, SIGPIPE);
     ConfigFileParser configParser;
     configParser.ParseFile(ac, av);

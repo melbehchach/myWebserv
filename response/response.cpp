@@ -197,6 +197,7 @@ bool response::getMethodResponse(client &_client)
 {
     _endSend = false;
     if (_client._startSend) {
+        std::cout << "RESPONSE:" << _client._responseBody  << std::endl;
         if (code != 200 && code != 301) {
             if (!_client._errorPageExist) {
                 _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";
@@ -234,7 +235,7 @@ bool response::getMethodResponse(client &_client)
 }
 
 std::string response::readFile(void)
-{ // RETURN THE CONTENT OF A FILE AS A STD::STRING
+{ 
     std::ifstream file;
     std::string text;
     std::ostringstream streambuff;

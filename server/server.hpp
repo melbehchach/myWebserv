@@ -72,7 +72,6 @@ class server {
         bool                        AllowedMethods(void);
         // SECOND CHECK
         void                        getResourceType(client &_client);
-        std::string                 AppendRootAndUri(void);
         void                        UriAvilability(client &_client);
         void                        serveDirecotry(client &_client);
 

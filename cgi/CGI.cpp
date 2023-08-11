@@ -1,5 +1,12 @@
 #include "./headers/CGI.hpp"
 
+std::ostream & operator<< (std::ostream & o, std::vector<char *> const & v) {
+	for(size_t i =0; i< v.size(); i++) {
+		o << v[i] << "\n";
+	}
+	return o;
+}
+
 const std::string names[] = {
 	"REDIRECT_STATUS", "DOCUMENT_ROOT", "SERVER_SOFTWARE", "SERVER_PORT", "GATEWAY_INTERFACE", "SERVER_NAME", "SCRIPT_FILENAME", "REQUEST_METHOD", "SERVER_PROTOCOL", "CONTENT_TYPE", "CONTENT_LENGTH", "PATH_INFO", "QUERY_STRING", "HTTP_COOKIE"};
 
@@ -68,6 +75,8 @@ void CGI::setEnv()
 
 void CGI::Exec()
 {
+	// std::vector<char *>env;
+	char  **env = new char*[14];
 	char const *args[3];
 	int write_fd[2];
 	int read_fd[2];
@@ -94,12 +103,13 @@ void CGI::Exec()
 		}
 		full += "=";
 		full += str;
-		char tmp[10000];
-		size_t j;
-		for (j = 0; j < full.length() + 1; j++)
-			tmp[j] = full[j];
-		tmp[j] = '\0';
-		env[k] = tmp;
+		// env.push_back(strdup(full.c_str()));
+		// char tmp[10000];
+		// size_t j;
+		// for (j = 0; j < full.length() + 1; j++)
+		// 	tmp[j] = full[j];
+		// tmp[j] = '\0';
+		env[k] = strdup(full.c_str());
 		k++;
 	}
 	env[k] = NULL;
@@ -140,6 +150,10 @@ void CGI::Exec()
 
 		close(read_fd[1]);
 		close(write_fd[0]);
+		for (size_t i = 0 ; env[i] != NULL; i++) {
+			delete env[i];
+		}
+		delete [] env;
 
 		if (result == 0)
 		{
@@ -163,6 +177,9 @@ void CGI::Exec()
 		}
 		close(read_fd[0]);
 	}
+	std::cout << "done executing cgi\n";
+	std::cout << "out == [" << this->_CgiOutput << "]\n";
+	// std::cout << env << "\n";
 }
 
 std::string CGI::ParsePath(std::string input)

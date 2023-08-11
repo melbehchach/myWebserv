@@ -11,7 +11,6 @@ void request::requestHeader(std::string& buffer) {
     getRequestLine();
     getHeaders();
     _position = buffer.find(_headers);
-    std::cout << _headers << std::endl;
     if (_method == "POST" && _position != -1) {
         _headersSize = _headers.size() + _position;
         _contentLength = _headersSize;
@@ -47,7 +46,8 @@ bool request::getRequestLine(void) {
         _statusCode = 414;
         return (false);
     }
-    if (_http.size() == 0 || _http != "HTTP/1.1") {
+    if (_http != "HTTP/1.1") {
+        std::cout << _http << std::endl;
         _statusCode = 505;
         return (false);
     }
@@ -61,7 +61,6 @@ void request::getHeaders(void) {
 
     while (1) {
         std::getline(_message, tmp, '\n');
-        std::cout << "headre: " << tmp << std::endl;
         _headers.append(tmp);
         _headers += '\n';
         if (tmp == "\r")
@@ -175,11 +174,11 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
-    if (_body.size() <= (_client._clientBodySize * MEGA)) {
+    std::cout << "body size: " << _body.size()  / MEGA << " client body size: " << _client._clientBodySize << std::endl;
+    if ((_body.size() / MEGA) <= (_client._clientBodySize )) {
         fullPath = _client._uploadPath;
         fullPath.append("/");
         fullPath.append(_filename);
-        std::cout << "This is fuul path =========> " << fullPath << std::endl;
         std::ofstream file(fullPath);
         if (file.is_open()) {
             file << _body;

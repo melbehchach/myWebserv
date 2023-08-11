@@ -1,5 +1,5 @@
 CC = c++
-CFLAGS = -std=c++98 -Wall -Werror -Wextra -g -fsanitize=address,undefined,integer
+CFLAGS = -std=c++98 -Wall -Werror -Wextra #-g -fsanitize=address,undefined,integer
 NAME = webserv
 HEADER = header.hpp\
 	./server/server.hpp \

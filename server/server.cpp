@@ -198,8 +198,7 @@ void server::serverReceive(int fd, int index) {
 	}
 }
 
-void server::getCurrentServer(client &_client)
-{
+void server::getCurrentServer(client &_client) {
 	_serverIndex = -1;
 	for (size_t i = 0; i < _configFile.GetNumberOfServers(); i++) {
 		for (size_t j = 0; j < _configFile.GetServers()[i].GetPortNumbers().size(); j++) {
@@ -233,8 +232,7 @@ bool server::LocationAvilability(void) {
 	return (false);
 }
 
-bool server::RedirectionAvilability(void)
-{
+bool server::RedirectionAvilability(void) {
 	std::string returnUri;
 
 	returnUri = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
@@ -288,18 +286,20 @@ bool server::errorPageChecker(int code, client &_client) {
 }
 
 void server::postMethod(client &_client) {
-
 	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs() > 0)
 		_client._clientBodySize = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs();
+
+	std::cout << "VALUE +++> " << _client._clientBodySize << std::endl;
+	
 	if (_firstResourceCheck)
 		getResourceType(_client);
 	if (_isDirectory) {
 		if (IndexExist()) {
 			if (!runCgi(_client) && _response.code == 200) {
-				// if (!errorPageChecker(403, _client))
-				// 	_response.code = 403;
-				// else
-					_isDirectory = false;
+				_isDirectory = false;
+			// 	if (!errorPageChecker(403, _client))
+			// 		_response.code = 403;
+			// 	else
 			}
 		}
 	}
@@ -335,8 +335,7 @@ void server::deleteMethod(client &_client) {
 		deleteFile(_client);
 }
 
-void server::getResourceType(client &_client)
-{
+void server::getResourceType(client &_client) {
 	std::string tmpURI;
 	DIR *directory;
 
@@ -366,18 +365,7 @@ void server::getResourceType(client &_client)
 	_firstResourceCheck = false;
 }
 
-std::string server::AppendRootAndUri(void)
-{
-	std::string tmpURI;
-
-	tmpURI = (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot());
-	if (_URI.find(tmpURI) != std::string::npos)
-		tmpURI.append(_URI);
-	return (tmpURI);
-}
-
-bool server::IndexExist(void)
-{
+bool server::IndexExist(void) {
 	std::string tmp;
 	std::string root;
 	size_t size;
@@ -393,8 +381,7 @@ bool server::IndexExist(void)
 }
 
 
-bool server::runCgi(client &_client)
-{
+bool server::runCgi(client &_client) {
 	if (this->_Query.compare("") != 0  && _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0) {
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
 			_configFile.GetServers()[_serverIndex],
@@ -436,8 +423,7 @@ bool server::runCgi(client &_client)
 	return (_client._cgiOn);
 }
 
-void server::ServeIndexFile(client &_client)
-{
+void server::ServeIndexFile(client &_client) {
 	std::string tmp;
 	std::string root;
 	size_t 		size;
@@ -462,8 +448,7 @@ void server::ServeIndexFile(client &_client)
 	}
 }
 
-void server::serveDirecotry(client &_client)
-{
+void server::serveDirecotry(client &_client) {
 	std::string tmp;
 	std::string root;
 	DIR *directory;
@@ -478,12 +463,9 @@ void server::serveDirecotry(client &_client)
 		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
 			_URI.append("/");
 
-		if ((directory = opendir(tmp.c_str())) != nullptr)
-		{
+		if ((directory = opendir(tmp.c_str())) != nullptr) {
 			_response._locationContent.clear();
-			while ((entry = readdir(directory)) != NULL)
-			{
-				std::cout << entry->d_name << std::endl;
+			while ((entry = readdir(directory)) != NULL) {
 				listFile = "<p> <a style=\"color:red;\"";
 				listFile += "href=\"http://";
 				listFile += _client._hostname;
@@ -507,10 +489,8 @@ void server::serveDirecotry(client &_client)
 	}
 }
 
-void server::UriAvilability(client &_client)
-{
-	if (_response.code == 301)
-	{
+void server::UriAvilability(client &_client) {
+	if (_response.code == 301) {
 		_response._path = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
 		return;
 	}
@@ -520,27 +500,22 @@ void server::UriAvilability(client &_client)
 	}
 }
 
-void server::deleteFile(client &_client)
-{
-	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
-	{
+void server::deleteFile(client &_client) {
+	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1) {
 		if (!errorPageChecker(500, _client))
 			_response.code = 500;
 	}
-	else
-	{
+	else {
 		if (std::remove(_response._path.c_str()) == 0)
 			_response.code = 204;
-		else
-		{
+		else {
 			if (!errorPageChecker(500, _client))
 				_response.code = 500;
 		}
 	}
 }
 
-int server::deleteDirectoryContent(std::string const path)
-{
+int server::deleteDirectoryContent(std::string const path) {
 	DIR *dir;
 	dirent *entry;
 	std::string filePath;
@@ -574,8 +549,7 @@ int server::deleteDirectoryContent(std::string const path)
 	return (deleteSubDirectories(path));
 }
 
-int server::deleteSubDirectories(std::string const path)
-{
+int server::deleteSubDirectories(std::string const path) {
 	DIR *dir;
 	dirent *entry;
 	std::string filePath;
@@ -596,8 +570,7 @@ int server::deleteSubDirectories(std::string const path)
 	return (204);
 }
 
-void server::deleteLocation(client &_client)
-{
+void server::deleteLocation(client &_client) {
 	int ret;
 
 	ret = deleteDirectoryContent(_pathForDelete);
@@ -666,7 +639,7 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 	tm.pop_back();
 	std::string body;
 	std::string connection = this->_request._connection;
-	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection;
+	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
 	if (ex.compare(".php") == 0) {
 		while (std::getline(s, buff)) {
 			if (buff.find("X-Powered-By:") != std::string::npos) {
@@ -698,8 +671,7 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 		header << "Content-Length: " + (std::to_string(body.size()));
 	}
 	else if (ex.compare(".py") == 0) {
-		while (std::getline(s, buff))
-		{
+		while (std::getline(s, buff)) {
 			if (buff.find("Content-type:") != std::string::npos)
 				header << "Content-type: " << buff.substr(buff.find(": ") + 2, (buff.find_first_of("\r")) - ( buff.find(": ") + 2 )) << "\r\n";
 		}
