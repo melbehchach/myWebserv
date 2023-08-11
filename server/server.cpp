@@ -224,7 +224,6 @@ bool server::LocationAvilability(void) {
 	_locationIndex = -1;
 	for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++) {	
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri();
-		std::cout << tmp << "\n";
 		if ((_URI.size() == 1) && ((position = tmp.find(_URI.c_str(), 0, tmp.size())) != -1)) {
 			_locationIndex = i;
 			return (true);
@@ -297,10 +296,11 @@ void server::postMethod(client &_client) {
 	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs() > 0)
 		_client._clientBodySize = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs();
 
-	
 	if (_firstResourceCheck)
 		getResourceType(_client);
+
 	if (_isDirectory) {
+		std::cout << "DEBUG" << std::endl;
 		if (IndexExist()) {
 			if (!runCgi(_client) && _response.code == 200) {
 				_isDirectory = false;
@@ -318,8 +318,9 @@ void server::getMethod(client &_client) {
 			if (!runCgi(_client) && _response.code == 200)
 				ServeIndexFile(_client);
 		}
-		else
+		else {
 			serveDirecotry(_client);
+		}
 	}
 	else {
 		if (!runCgi(_client)) {
@@ -341,16 +342,13 @@ void server::getResourceType(client &_client) {
 	std::string tmpURI;
 	DIR *directory;
 
-	if (access(_URI.c_str() , R_OK | W_OK) != -1) {
-		_isDirectory = false;
-		return ;
-	}
-
 	if (_configFile.GetServers()[_serverIndex].GetRoot().size() > 0)
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
 	else
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot().size();
-	if (tmpURI.size() > 0) {
+
+	if (tmpURI.size() > 0)
+	{
 		if (_URI.find('?') == std::string::npos)
 			tmpURI.append(_URI);
 		else {
@@ -358,13 +356,16 @@ void server::getResourceType(client &_client) {
 			_URI.erase(_URI.find('?'));
 			tmpURI.append(_URI);
 		}
-		if ((directory = opendir(tmpURI.c_str())) != nullptr) {
+
+		if ((directory = opendir(tmpURI.c_str())) != nullptr)
+		{
 			_isDirectory = true;
 			_pathForDelete = tmpURI;
 			_client._uploadPath = tmpURI;
 			closedir(directory);
 		}
-		else {
+		else
+		{
 			_isDirectory = false;
 			_response._path = tmpURI;
 		}
@@ -507,7 +508,8 @@ void server::UriAvilability(client &_client) {
 		_response._path = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
 		return ;
 	}
-	if (access(_URI.c_str(), R_OK | W_OK) == -1) {
+	if (access(_URI.c_str(), F_OK) == -1) {
+		std::cout << _URI << std::endl;
 		if (!errorPageChecker(404, _client))
 			_response.code = 404;
 	}
@@ -515,13 +517,10 @@ void server::UriAvilability(client &_client) {
 		_response.code = 200;
 		_response._path = _URI;
 	}
-	std::cout << _response.code << std::endl;
 }
 
 void server::deleteFile(client &_client) {
 	if (access(_response._path.c_str(), F_OK) == -1) {
-		std::cout << _response._path.c_str() << "\n";
-		std::cout << "REPOSNE PATH VALIDE" << std::endl;
 		if (!errorPageChecker(500, _client))
 			_response.code = 500;
 	}

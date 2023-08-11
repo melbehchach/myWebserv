@@ -1,7 +1,6 @@
 #include "client.hpp"
 
 client::client() {
-    std::cout << "new clinet created" << std::endl;
     _startRecv = false;
     _startSend = false;
     _endSend = false;

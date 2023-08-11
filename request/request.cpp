@@ -132,7 +132,7 @@ void request::erasePostRequestHeaders(client &_client) {
 void    request::postMethod(client &_client) {
 
     _position1 = _client._requestBody.find(_boundary);
-    if (_position1 != -1) { // in case another boundary "body infos" means another body exists
+    if (_position1 != -1) { 
         if(_chunkedTransfer)
             chunkedPostRequestBody(_client._requestBody, _client);
         else {
@@ -142,9 +142,8 @@ void    request::postMethod(client &_client) {
         _multipleFiles = true;
         erasePostRequestHeaders(_client);
     }
-    // FINALE STAPE
-    _position2 = _client._requestBody.find(_finaleBoundary); // find the last boundary
-    if (_position2 != -1) { // End of receiving
+    _position2 = _client._requestBody.find(_finaleBoundary);
+    if (_position2 != -1) {
         while ((_position1 = _client._requestBody.find(_boundary)) != -1) {
             if(_chunkedTransfer)
                 chunkedPostRequestBody(_client._requestBody, _client);
@@ -154,8 +153,7 @@ void    request::postMethod(client &_client) {
             _multipleFiles = true;
             erasePostRequestHeaders(_client);
         }
-        // SEND THE LAST _client._requestBody
-        _position2 = _client._requestBody.find(_finaleBoundary); // update the postion in case we had lots of files
+        _position2 = _client._requestBody.find(_finaleBoundary);
         if (_chunkedTransfer)
             chunkedPostRequestBody(_client._requestBody, _client);
         else
@@ -174,6 +172,7 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
+    std::cout << "FUUL PATH: " << fullPath << std::endl;
     if ((_body.size() / MEGA) <= (_client._clientBodySize )) {
         fullPath = _client._uploadPath;
         fullPath.append("/");
