@@ -10,7 +10,7 @@
 #include "../parsing/headers/ServerContext.hpp"
 #include "../parsing/headers/LocationContext.hpp"
 #include "../cgi/headers/CGI.hpp"
-
+#include <sys/stat.h>
 
 #define BUFFSIZE 16000
 

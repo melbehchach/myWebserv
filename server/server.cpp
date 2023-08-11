@@ -342,10 +342,13 @@ void server::getResourceType(client &_client) {
 	std::string tmpURI;
 	DIR *directory;
 
-	if (_configFile.GetServers()[_serverIndex].GetRoot().size() > 0)
+	if (_configFile.GetServers()[_serverIndex].GetRoot().size() > 0) {
+		if (_locationIndex == -1) {
+			_isDirectory = false;
+			return ;
+		}
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
-	else
-		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot().size();
+	}
 
 	if (tmpURI.size() > 0)
 	{
@@ -356,7 +359,6 @@ void server::getResourceType(client &_client) {
 			_URI.erase(_URI.find('?'));
 			tmpURI.append(_URI);
 		}
-
 		if ((directory = opendir(tmpURI.c_str())) != nullptr)
 		{
 			_isDirectory = true;
@@ -474,23 +476,40 @@ void server::serveDirecotry(client &_client) {
 
 		tmp = root;
 		tmp.append(_URI);
+		
 		if (_URI.find('/', (_URI.size() - 1)) == std::string::npos)
 			_URI.append("/");
 
 		if ((directory = opendir(tmp.c_str())) != nullptr) {
 			_response._locationContent.clear();
+
+		std::cout << tmp << std::endl;
+		std::cout << _URI << std::endl;
+
 			while ((entry = readdir(directory)) != NULL) {
 				listFile = "<p> <a style=\"color:red;\"";
 				listFile += "href=\"http://";
 				listFile += _client._hostname;
 				listFile += ":";
 				listFile += _client._port;
-				listFile += _URI;
-				listFile += entry->d_name;
+				tmp = root;
+				tmp += _URI;
+				tmp = tmp.append(entry->d_name);
+				struct stat path_stat;
+				if (stat(tmp.c_str(), &path_stat) == 0) {
+        			if (S_ISREG(path_stat.st_mode)) {
+						listFile += tmp;
+        			} 
+					else if (S_ISDIR(path_stat.st_mode)) {
+						listFile += _URI;
+						listFile += entry->d_name;
+    				}
+				}	
 				listFile += "\">";
 				listFile += entry->d_name;
 				listFile += "</a></p>\n";
 				_response._locationContent += listFile;
+				tmp.clear();
 			}
 			listFile.clear();
 			closedir(directory);
