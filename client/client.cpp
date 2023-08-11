@@ -1,6 +1,7 @@
 #include "client.hpp"
 
 client::client() {
+    std::cout << "new clinet created" << std::endl;
     _startRecv = false;
     _startSend = false;
     _endSend = false;
@@ -40,12 +41,13 @@ void client::resetAttributs(void) {
     _responseBody.clear();
     _method.clear();
     _uploadPath.clear();
-    _startRecv = false;
     _startSend = false;
     _endSend = false;
     _serveFile = false;
     _autoIndexOn = false;
     _cgiOn = false;
     _errorPageExist = false;
+    enableStartRecv();
+    
 }
 client::~client() {}

@@ -67,6 +67,7 @@ class ServerContext : public ConfigValues {
 		std::vector<std::string> GetPortNumbers() const;
 		std::vector<std::string> GetServerNames() const;
 
+		bool isRootSet();
 		void DeletePort(std::multimap<std::string,std::string>::iterator it);
 
 };

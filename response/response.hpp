@@ -37,7 +37,6 @@ class response {
         std::string statusLine(void);
         std::string contentLengthHeader(int size);
         std::string contentTypeHeader(void);
-        std::string connexionHeader(void);
         std::string serverNameHeader(client &_client);
         std::string dateHeader(void);
         std::string location(void);

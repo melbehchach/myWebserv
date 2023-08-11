@@ -26,7 +26,6 @@ ClientMaxBodySize::ClientMaxBodySize(std::string val)
 	tmp = StringToSize_T(val.substr(0, i));
 	if (tmp > 2147483647)
 		throw std::invalid_argument("Error: Max Body Size Too Large");
-	std::cout << "CMB : " << tmp << "\n";
 	_val = tmp;
 }
 

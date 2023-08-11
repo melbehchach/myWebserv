@@ -9,13 +9,25 @@ ServerContext::ServerContext(size_t *start, std::string file, size_t ServerId) :
 	_LocationContext.push_back(LocationContext(GetRoot()));
 	_ServerNames.push_back("localhost");
 	GetDirectiveValuePair(start, file);
-	if (HasLocation("/") == false)
-	{
-		LocationContext loc(GetRoot());
-		_LocationPos++;
-		_LocationContext.push_back(loc);
-	}
+	// if (HasLocation("/") == false)
+	// {
+	// 	LocationContext loc(GetRoot());
+	// 	_LocationPos++;
+	// 	_LocationContext.push_back(loc);
+	// }
 }
+
+bool ServerContext::isRootSet() {
+	bool isSet = false;
+	for (size_t i = 0; i < this->_LocationContext.size(); i++) {
+		if ( this->_LocationContext[i].GetLocationUri().GetUri().compare("/") == 0)
+		{
+			isSet = true;
+			break;
+		}
+	}
+	return isSet;
+}	
 
 // check later
 void ServerContext::GetDirectiveValuePair(size_t *pos, std::string file)

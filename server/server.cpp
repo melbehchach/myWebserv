@@ -104,8 +104,8 @@ server::server(std::multimap<std::string, std::pair<std::string, std::string> > 
 	for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++)
 	{
 	}
-
 	while (1) {
+
 		_totalFdsCheck = serverPoll();
 		if (_totalFdsCheck < 0)
 			break; 
@@ -115,7 +115,7 @@ server::server(std::multimap<std::string, std::pair<std::string, std::string> > 
 					for (_listnersIt = _listnersMap.begin(); _listnersIt != _listnersMap.end(); _listnersIt++) { 
 						if (pfds[i].fd == _listnersIt->first) {
 							client _clientObj;
-							_newClientFd = serverAccept(pfds[i].fd); // Listening descriptor is readable.
+							_newClientFd = serverAccept(pfds[i].fd); 
 							_clientObj.setFd(_newClientFd);
 							_clientObj.enableStartRecv();
 							_clientObj._port = _listnersIt->second._port;
@@ -127,7 +127,7 @@ server::server(std::multimap<std::string, std::pair<std::string, std::string> > 
 					}
 				}
 				else {
-					serverReceive(pfds[i].fd, i); // check event for receive
+					serverReceive(pfds[i].fd, i); 
 				}
 			}
 			else if (pfds[i].revents & POLLOUT) {
@@ -145,42 +145,46 @@ void server::serverReceive(int fd, int index) {
 	if (_mapIt != _clientsMap.end()) {
 		memset(_buffer, 0, BUFFSIZE);
 		_bytesRecv = recv(_mapIt->second._fd, _buffer, BUFFSIZE, 0);
-		if (_bytesRecv < 0) {
+		if (_bytesRecv <= 0) {
 			close(fd);
 			pfds.erase(pfds.begin() + index);
 			_clientsMap.erase(_mapIt);
 			return;
 		}
-		else
-			_mapIt->second._requestBody.append(_buffer, _bytesRecv);
-
+		_mapIt->second._requestBody.append(_buffer, _bytesRecv);
 		if (_mapIt->second._startRecv) {
-			_request.requestHeader(_mapIt->second._requestBody);
-			_mapIt->second._method = _request._method;
-			_URI = _request._URI;
-			_firstResourceCheck = true;
-			_mapIt->second.disableStartRecv();
-			_response.code = 200;
-			if (_request._method == "POST")
-				_request.erasePostRequestHeaders(_mapIt->second);
+			if (_mapIt->second._requestBody.size() > 1){
+				_request.requestHeader(_mapIt->second._requestBody);
+				_mapIt->second._method = _request._method;
+				_URI = _request._URI;
+				_firstResourceCheck = true;
+				_mapIt->second.disableStartRecv();
+				_response.code = 200;
+				if (_request._method == "POST")
+					_request.erasePostRequestHeaders(_mapIt->second);
 
-			getCurrentServer(_mapIt->second);
-			if (!LocationAvilability()) {
-				if (!errorPageChecker(404, _mapIt->second))
-					_response.code = 404;
-				_mapIt->second.enableStartSend();
-				return;
-			}
-			else if (!RedirectionAvilability()) {
-				_response.code = 301;
-				_mapIt->second.enableStartSend();
-				return;
-			}
-			else if (!AllowedMethods()) {
-				if (!errorPageChecker(405, _mapIt->second))
-					_response.code = 405;
-				_mapIt->second.enableStartSend();
-				return;
+				getCurrentServer(_mapIt->second);
+				if (!LocationAvilability()) {
+					if (access(_URI.c_str() , R_OK | W_OK) == -1) {
+						if (!errorPageChecker(404, _mapIt->second))
+							_response.code = 404;
+						_mapIt->second.enableStartSend();
+						return;
+					}
+				}
+				else {
+					if (!RedirectionAvilability()) {
+						_response.code = 301;
+						_mapIt->second.enableStartSend();
+						return;
+					}
+					if (!AllowedMethods()) {
+						if (!errorPageChecker(405, _mapIt->second))
+							_response.code = 405;
+						_mapIt->second.enableStartSend();
+						return;
+					}
+				}
 			}
 		}
 		if (_response.code == 200) {
@@ -220,6 +224,7 @@ bool server::LocationAvilability(void) {
 	_locationIndex = -1;
 	for (size_t i = 0; i < _configFile.GetServers()[_serverIndex].GetLocationContexts().size(); i++) {	
 		tmp = _configFile.GetServers()[_serverIndex].GetLocationContexts()[i].GetLocationUri().GetUri();
+		std::cout << tmp << "\n";
 		if ((_URI.size() == 1) && ((position = tmp.find(_URI.c_str(), 0, tmp.size())) != -1)) {
 			_locationIndex = i;
 			return (true);
@@ -235,7 +240,10 @@ bool server::LocationAvilability(void) {
 bool server::RedirectionAvilability(void) {
 	std::string returnUri;
 
-	returnUri = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
+	if (_locationIndex != -1)
+		returnUri = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
+	else
+		returnUri = _configFile.GetServers()[_serverIndex].GetReturn().GetUrl();
 	if (returnUri.size() > 0)
 	{
 		_response._path = returnUri;
@@ -289,7 +297,6 @@ void server::postMethod(client &_client) {
 	if (_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs() > 0)
 		_client._clientBodySize = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCmbs();
 
-	std::cout << "VALUE +++> " << _client._clientBodySize << std::endl;
 	
 	if (_firstResourceCheck)
 		getResourceType(_client);
@@ -297,9 +304,6 @@ void server::postMethod(client &_client) {
 		if (IndexExist()) {
 			if (!runCgi(_client) && _response.code == 200) {
 				_isDirectory = false;
-			// 	if (!errorPageChecker(403, _client))
-			// 		_response.code = 403;
-			// 	else
 			}
 		}
 	}
@@ -311,13 +315,11 @@ void server::getMethod(client &_client) {
 	getResourceType(_client);
 	if (_isDirectory) {
 		if (IndexExist()) {
-			if (!runCgi(_client) && _response.code == 200) {
+			if (!runCgi(_client) && _response.code == 200)
 				ServeIndexFile(_client);
-			}
 		}
-		else {
+		else
 			serveDirecotry(_client);
-		}
 	}
 	else {
 		if (!runCgi(_client)) {
@@ -338,6 +340,11 @@ void server::deleteMethod(client &_client) {
 void server::getResourceType(client &_client) {
 	std::string tmpURI;
 	DIR *directory;
+
+	if (access(_URI.c_str() , R_OK | W_OK) != -1) {
+		_isDirectory = false;
+		return ;
+	}
 
 	if (_configFile.GetServers()[_serverIndex].GetRoot().size() > 0)
 		tmpURI = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetRoot();
@@ -382,6 +389,12 @@ bool server::IndexExist(void) {
 
 
 bool server::runCgi(client &_client) {
+
+	if (access(_URI.c_str() , R_OK | W_OK) != -1) {
+		_client._cgiOn = false;
+		return (_client._cgiOn);
+	}
+
 	if (this->_Query.compare("") != 0  && _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetCGI().GetFilePath().compare("") != 0) {
 		cgiData input(_configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex],
 			_configFile.GetServers()[_serverIndex],
@@ -492,16 +505,23 @@ void server::serveDirecotry(client &_client) {
 void server::UriAvilability(client &_client) {
 	if (_response.code == 301) {
 		_response._path = _configFile.GetServers()[_serverIndex].GetLocationContexts()[_locationIndex].GetReturn().GetUrl();
-		return;
+		return ;
 	}
-	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1) {
+	if (access(_URI.c_str(), R_OK | W_OK) == -1) {
 		if (!errorPageChecker(404, _client))
 			_response.code = 404;
 	}
+	else {
+		_response.code = 200;
+		_response._path = _URI;
+	}
+	std::cout << _response.code << std::endl;
 }
 
 void server::deleteFile(client &_client) {
-	if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1) {
+	if (access(_response._path.c_str(), F_OK) == -1) {
+		std::cout << _response._path.c_str() << "\n";
+		std::cout << "REPOSNE PATH VALIDE" << std::endl;
 		if (!errorPageChecker(500, _client))
 			_response.code = 500;
 	}
@@ -529,7 +549,7 @@ int server::deleteDirectoryContent(std::string const path) {
 		if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
 			continue;
 		filePath = path + "/" + entry->d_name;
-		if (access(_response._path.c_str(), F_OK | R_OK | W_OK) == -1)
+		if (access(_response._path.c_str(), F_OK ) == -1)
 			_response.code = 500;
 		else {
 			struct stat fileStat;
@@ -583,11 +603,26 @@ void server::deleteLocation(client &_client) {
 }
 
 void server::serverSend(int fd, int index) {
+
 	_mapIt = _clientsMap.find(fd);
 	if (_mapIt != _clientsMap.end()) {
-		if (_request._method == "GET") {
-			if (_response.getMethodResponse(_mapIt->second)) {
-				if (_request._connection != "keep-alive\r") {
+		if (_mapIt->second._startSend) {
+			if (_request._method == "GET") {
+				if (_response.getMethodResponse(_mapIt->second)) {
+					if (_request._connection != "keep-alive\r") {
+						close(_mapIt->second._fd);
+						pfds.erase(pfds.begin() + index);
+						_clientsMap.erase(_mapIt);
+					}
+					else
+						_mapIt->second.enableStartRecv();
+					_request._method.clear();
+					_URI.clear();
+				}
+			}
+			else if (_request._method == "DELETE") {
+				_response.deleteMethodResponse(_mapIt->second);
+				if (_request._connection == "close\r") {
 					close(_mapIt->second._fd);
 					pfds.erase(pfds.begin() + index);
 					_clientsMap.erase(_mapIt);
@@ -597,32 +632,21 @@ void server::serverSend(int fd, int index) {
 				_request._method.clear();
 				_URI.clear();
 			}
-		}
-		else if (_request._method == "DELETE") {
-			_response.deleteMethodResponse(_mapIt->second);
-			if (_request._connection == "close\r") {
-				close(_mapIt->second._fd);
-				pfds.erase(pfds.begin() + index);
-				_clientsMap.erase(_mapIt);
-			}
-			else
-				_mapIt->second.enableStartRecv();
-			_request._method.clear();
-			_URI.clear();
-		}
-		else if ((_request._method == "POST") && _mapIt->second._startSend) {
-			if (_mapIt->second._errorCode == 413)
-				_response.code = 413;
-			_response.postMethodResponse(_mapIt->second);
-			if (_request._connection != "keep-alive\r") {
-				close(_mapIt->second._fd);
-				pfds.erase(pfds.begin() + index);
-				_clientsMap.erase(_mapIt);
-			}
-			else {
-				_mapIt->second.enableStartRecv();
+			else if ((_request._method == "POST") && _mapIt->second._startSend) {
+				if (_mapIt->second._errorCode == 413)
+					_response.code = 413;
+				_response.postMethodResponse(_mapIt->second);
+				if (_request._connection != "keep-alive\r") {
+					close(_mapIt->second._fd);
+					pfds.erase(pfds.begin() + index);
+					_clientsMap.erase(_mapIt);
+				}
+				else {
+					_mapIt->second.enableStartRecv();
+				}
 			}
 		}
+		_request._msgrequest.clear();
 	}
 }
 
@@ -639,7 +663,7 @@ void server::parseCgiOutput(std::string &input, std::ostringstream &header, std:
 	tm.pop_back();
 	std::string body;
 	std::string connection = this->_request._connection;
-	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" << "Connection: " << connection << "\r\n";
+	header << this->_response.statusLine() << "Server: WebServ\r\n" << "Date: " << tm << " GMT\r\n" ; //  << "Connection: " << connection << "\r\n"; Mark: this is the error! Connection in response alo ?? 
 	if (ex.compare(".php") == 0) {
 		while (std::getline(s, buff)) {
 			if (buff.find("X-Powered-By:") != std::string::npos) {

@@ -93,8 +93,12 @@ void ConfigFileParser::CheckServerBlock() {
 		EndPos = _FileContent.find_first_of(" \t\n\f\r\v", StartPos);
 		if (EndPos != std::string::npos) {
 			i = StartPos;
-			if (CheckServerValidity(_FileContent.substr(StartPos, EndPos - StartPos), &i))
+			if (CheckServerValidity(_FileContent.substr(StartPos, EndPos - StartPos), &i)) {
 				SetServerContext(&i);
+				if (this->_servers[this->_servers.size() - 1].isRootSet() == false)
+					throw std::invalid_argument("Error: No Root location in server block " + std::to_string(this->_servers.size() -1 ));
+
+			}
 		}
 		if (i != std::string::npos)
 			i++;

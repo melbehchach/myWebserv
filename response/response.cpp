@@ -21,14 +21,6 @@ std::string response::contentLengthHeader(int size)
     return (_contentLength);
 }
 
-std::string response::connexionHeader(void)
-{
-    _connexion = "Connexion: ";
-    _connexion += "keep-alive";
-    _connexion += "\r\n";
-    return (_connexion);
-}
-
 std::string response::serverNameHeader(client &_client)
 {
     _serverName = "server: ";
@@ -81,7 +73,6 @@ std::string response::deleteHeaders(int size, client &_client) {
     else
         size = 0;
     _headers += contentLengthHeader(size);
-    _headers += connexionHeader();
     _headers += "\r\n";
     return (_headers);
 }
@@ -99,7 +90,6 @@ bool response::deleteMethodResponse(client &_client)
         else {
             _client._responseBody = deleteHeaders(0, _client);
         }
-        std::cout << _client._responseBody << std::endl;
         _client.disableStartSend();
     }
     if (_client._responseBody.size() > 0) {
@@ -126,7 +116,6 @@ bool response::deleteMethodResponse(client &_client)
 /*                      POST METHOD RESPONSE                      */
 std::string response::postHeaders(int size, client &_client) {
     _headers = statusLine();
-    _headers += connexionHeader();
     _headers += serverNameHeader(_client);
     _headers += dateHeader();
     if (code != 200 && code != 204) {
@@ -136,7 +125,6 @@ std::string response::postHeaders(int size, client &_client) {
     else
         size = 0;
     _headers += contentLengthHeader(size);
-    _headers += connexionHeader();
     _headers += "\r\n";
     return (_headers);
 }
@@ -150,7 +138,7 @@ bool response::postMethodResponse(class client &_client) {
             _client._responseBody = postHeaders(get_file_size(), _client);
             _client._responseBody.append(readFile());
         }
-        else {
+        else if (!_client._cgiOn) {
             _client._responseBody = postHeaders(0, _client);
         }
         _client.disableStartSend();
@@ -197,7 +185,6 @@ bool response::getMethodResponse(client &_client)
 {
     _endSend = false;
     if (_client._startSend) {
-        std::cout << "RESPONSE:" << _client._responseBody  << std::endl;
         if (code != 200 && code != 301) {
             if (!_client._errorPageExist) {
                 _path = "/Users/mel-behc/Desktop/myWebserv/cache/error.html";

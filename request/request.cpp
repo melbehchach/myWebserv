@@ -17,6 +17,7 @@ void request::requestHeader(std::string& buffer) {
         buffer.erase(0, _headersSize);
         _headers.clear();
     }
+    _headers.clear();
     _message.str("");
     _message.clear();
 }
@@ -105,7 +106,6 @@ void request::postBodyInfos(std::string &infos) {
             _contentType = tmp.substr((pos + 2), (size - pos));
         }
     }
-
     _message.str("");
     _message.clear();
 }
@@ -174,7 +174,6 @@ void    request::normalPostRequestBody(std::string &buffer, int boundary_Positio
     if (_position == boundary_Position)
         buffer.erase(boundary_Position, (_boundary.size() + 4));
     _body.append(buffer, 0, boundary_Position);
-    std::cout << "body size: " << _body.size()  / MEGA << " client body size: " << _client._clientBodySize << std::endl;
     if ((_body.size() / MEGA) <= (_client._clientBodySize )) {
         fullPath = _client._uploadPath;
         fullPath.append("/");
